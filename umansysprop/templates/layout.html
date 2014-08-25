@@ -1,0 +1,59 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    {% block head %}
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{% endblock %} - UManSysProp</title>
+    <link rel="stylesheet" href="/static/foundation5/css/foundation.css" />
+    <link rel="stylesheet" href="/static/app.css" />
+    <link href='http://fonts.googleapis.com/css?family=Nunito' rel='stylesheet' type='text/css'>
+    <script src="/static/foundation5/js/vendor/modernizr.js"></script>
+    {% endblock %}
+  </head>
+  <body>
+
+    <header>
+      {% block header %}
+      <div class="row">
+        <div class="small-12 columns">
+          <img src="/static/penicillin.png" height="250" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="large-6 medium-4 columns">
+          <h1>UManSysProp</h1>
+          <h5>Multiphase system online property prediction</h5>
+        </div>
+      </div>
+      {% endblock %}
+    </header>
+
+    <div id="content">
+      {% block content %}
+      {% endblock %}
+    </div>
+
+    <footer>
+      {% block footer %}
+      <div class="row">
+        <div class="small-12 columns">
+          <p>Copyright &copy; 2014 <a href="mailto:dave@waveform.org.uk">Dave
+          Hughes</a>. Published under the terms of the <a
+          href="http://www.gnu.org/licenses/gpl-3.0.html">GNU GPL v3</a> or (at
+          your option) any later version. Source code is available from <a
+          href="https://github.com/waveform80/umansysprop">GitHub</a>,
+          documentation is available from <a
+          href="https://umansysprop.readthedocs.org/">ReadTheDocs</a>.</p>
+        </div>
+      </div>
+      {% endblock %}
+    </footer>
+
+    <script src="/static/foundation5/js/vendor/jquery.js"></script>
+    <script src="/static/foundation5/js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+  </body>
+</html>

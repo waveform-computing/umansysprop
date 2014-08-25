@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block content %}
+<form method="POST" action="{{ url_for('tool', name=tool.__name__.split('.')[-1]) }}">
+  {% block form %}
+  {% endblock %}
+  <div class="row">
+    <div class="small-12 columns">
+      <input type="submit" name="submit" value="Calculate" />
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,27 @@
+header {
+  height: 250px;
+  background: #004068;
+}
+
+header h1,
+header h2,
+header h3,
+header h4,
+header h5,
+header h6
+{
+  font-family: "Nunito", sans-serif;
+  color: #fff;
+}
+
+header img {
+  display: inline-block;
+  vertical-align: middle;
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 250px;
+}
+
+footer .columns { background: #ddd; }
+footer p { margin: 10px 0; font-size: 10pt; }

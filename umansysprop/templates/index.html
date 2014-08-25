@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="small-12 columns">
+    <h1>Welcome</h1>
+    <p>UManSysProp is an online facility for calculating the properties of
+    individual organic molecules and ensemble mixtures. Built using <a
+    href="http://openbabel.org/wiki/Main_Page">open source chemical
+    informatics</a>, the facilities provided are divided according to broad
+    applications. Click on each tab above for a description of that
+    application.</p>
+
+    <p>Rather than automatically choosing a technique for each calculation,
+    users have the option to select from a wide range of peer reviewed methods.
+    The relevant literature for each method is listed in the 'bibiliography'
+    section of this site. Where appropriate users are provided with a brief
+    summary on the applicability of individual techniques. Input is currently
+    based on the <a
+    href="http://www.daylight.com/dayhtml/doc/theory/theory.smiles.html">SMILES</a>
+    string convention and users have the option to use a text based entry
+    system, select pre-defined compounds or perform batch simulations with a
+    file upload system.</p>
+
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        {% for tool in tools %}
+        <tr>
+          <td>
+            <a href="{{ url_for('tool', name=tool.__name__.split('.')[-1]) }}">
+              {{ tool.__name__.split('.')[-1] }}
+            </a>
+          </td>
+          <td>{{ tool.__doc__ }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p>If you are not familiar with the SMILES convention, <a
+      href="http://umansysprop.seaes.manchester.ac.uk/External_html/JChemDraw.html">click
+    here to open up a new window</a> and use the canvas in the powered by the
+    <a href="http://jchempaint.github.io/">JChemPaint java applet</a>. You will
+    need to enable Java in your browser to use this facility whilst accepting
+    the current security settings. There you can draw a molecular structure and
+    generate a SMILES string using the <q>Tools</q> selection in the top
+    menu.</p>
+  </div>
+</div>
+{% endblock %}
