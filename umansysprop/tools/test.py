@@ -31,7 +31,16 @@ from __future__ import (
 str = type('')
 
 
-def handle(number1, number2):
-    number1 = int(number1)
-    number2 = int(number2)
+from wtforms import Form as BaseForm
+from wtforms.fields.html5 import IntegerField
+from wtforms.validators import InputRequired
+
+
+class Form(BaseForm):
+    number1 = IntegerField('First number', validators=[InputRequired()])
+    number2 = IntegerField('Second number', validators=[InputRequired()])
+
+
+def handler(number1, number2):
     return {'result': number1 + number2}
+

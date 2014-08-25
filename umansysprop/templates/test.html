@@ -3,14 +3,10 @@
 {% block form %}
 <div class="row">
   <div class="medium-6 columns">
-    <label>Input 1
-      <input type="number" name="number1" placeholder="1" />
-    </label>
+    {{ render_field(form.number1) }}
   </div>
   <div class="medium-6 columns">
-    <label>Input 1
-      <input type="number" name="number2" placeholder="2" />
-    </label>
+    {{ render_field(form.number2) }}
   </div>
 </div>
 {% endblock %}

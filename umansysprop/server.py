@@ -33,7 +33,7 @@ import io
 import os
 import pkgutil
 
-from flask import Flask, request, jsonify, render_template, url_for, flash
+from flask import Flask, request, jsonify, render_template
 
 from . import tools
 
@@ -53,25 +53,31 @@ def index():
 
 @app.route('/tool/<name>', methods=['GET', 'POST'])
 def tool(name):
+    # Find and load the module containing the specified tool
     mod_name = '%s.%s' % (tools.__name__, name)
-    if request.method == 'GET':
-        return render_template(
-            '%s.html' % name,
-            tool=sys.modules[mod_name]
-            )
-    elif request.method == 'POST':
-        try:
-            mod = sys.modules[mod_name]
-        except KeyError:
-            loader = pkgutil.get_loader(mod_name)
-            mod = loader.load_module(mod_name)
-        assert hasattr(mod, 'handle')
+    try:
+        mod = sys.modules[mod_name]
+    except KeyError:
+        loader = pkgutil.get_loader(mod_name)
+        mod = loader.load_module(mod_name)
+    assert hasattr(mod, 'Form')
+    assert hasattr(mod, 'handler')
+
+    # Present the tool's input form, or execute the tool's handler callable
+    # based on whether the HTTP request is a GET or a POST
+    form = mod.Form(request.form)
+    if request.method == 'POST' and form.validate():
         args = {
-            k: v if len(v) > 1 else v[0]
-            for (k, v) in request.form.iterlists()
+            k: form.data[k]
+            for k in request.form
             if k != 'submit'
             }
-        return jsonify(mod.handle(**args))
+        return jsonify(mod.handler(**args))
+    return render_template(
+        '%s.html' % name,
+        form=form,
+        )
+
 
 def main():
     app.run(

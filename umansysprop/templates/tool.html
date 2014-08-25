@@ -1,6 +1,19 @@
 {% extends "layout.html" %}
+{% macro render_field(field) %}
+{% if field.errors %}
+    {% set css_class = 'error' + kwargs.pop('class', '') %}
+    {{ field.label(class=css_class) }}
+    {{ field(class=css_class, **kwargs) }}
+    <small class="error">
+        {{ field.errors|join(', ') }}
+    </small>
+{% else %}
+    {{ field.label() }}
+    {{ field(**kwargs) }}
+{% endif %}
+{% endmacro %}
 {% block content %}
-<form method="POST" action="{{ url_for('tool', name=tool.__name__.split('.')[-1]) }}">
+<form method="POST">
   {% block form %}
   {% endblock %}
   <div class="row">
