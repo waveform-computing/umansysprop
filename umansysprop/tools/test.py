@@ -31,16 +31,15 @@ from __future__ import (
 str = type('')
 
 
-from wtforms import Form as BaseForm
-from wtforms.fields.html5 import IntegerField
-from wtforms.validators import InputRequired
+from ..forms import *
 
 
-class Form(BaseForm):
+class HandlerForm(Form):
     number1 = IntegerField('First number', validators=[InputRequired()])
     number2 = IntegerField('Second number', validators=[InputRequired()])
+    temperatures = FloatRangeField('Temperature', validators=[InputRequired(), NumberRange(min=0.0, max=100.0)])
 
 
-def handler(number1, number2):
-    return {'result': number1 + number2}
+def handler(number1, number2, temperatures):
+    return {'result': number1 + number2, 'range': list(temperatures)}
 

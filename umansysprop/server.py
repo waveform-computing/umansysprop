@@ -65,7 +65,7 @@ def tool(name):
 
     # Present the tool's input form, or execute the tool's handler callable
     # based on whether the HTTP request is a GET or a POST
-    form = mod.Form(request.form)
+    form = mod.HandlerForm(request.form)
     if request.method == 'POST' and form.validate():
         return jsonify(mod.handler(**form.data))
     return render_template(
