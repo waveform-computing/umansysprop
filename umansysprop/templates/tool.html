@@ -1,20 +1,35 @@
 {% extends "layout.html" %}
+
 {% macro render_field(field) %}
 {% if field.errors %}
     {% set css_class = 'error' + kwargs.pop('class', '') %}
     {{ field.label(class=css_class) }}
     {{ field(class=css_class, **kwargs) }}
     <small class="error">
+        {% if field.errors is mapping %}
+        {% for name, errors in field.errors.items() %}
+        {{ name }}: {{ errors|join(', ') }}<br />
+        {% endfor %}
+        {% else %}
         {{ field.errors|join(', ') }}
+        {% endif %}
     </small>
 {% else %}
     {{ field.label() }}
     {{ field(**kwargs) }}
 {% endif %}
 {% endmacro %}
+
 {% block content %}
 <form method="POST">
   {% block form %}
+  {% for field in form %}
+  <div class="row">
+    <div class="small-12 columns">
+      {{ render_field(field) }}
+    </div>
+  </div>
+  {% endfor %}
   {% endblock %}
   <div class="row">
     <div class="small-12 columns">
@@ -22,4 +37,13 @@
     </div>
   </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% for field in form %}
+{% if field.scripts is defined %}
+{{ field.scripts }}
+{% endif %}
+{% endfor %}
 {% endblock %}

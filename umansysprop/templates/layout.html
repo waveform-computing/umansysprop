@@ -50,10 +50,12 @@
       {% endblock %}
     </footer>
 
+    {% block scripts %}
     <script src="/static/foundation5/js/vendor/jquery.js"></script>
     <script src="/static/foundation5/js/foundation.min.js"></script>
     <script>
       $(document).foundation();
     </script>
+    {% endblock %}
   </body>
 </html>
