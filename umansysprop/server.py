@@ -67,12 +67,7 @@ def tool(name):
     # based on whether the HTTP request is a GET or a POST
     form = mod.Form(request.form)
     if request.method == 'POST' and form.validate():
-        args = {
-            k: form.data[k]
-            for k in request.form
-            if k != 'submit'
-            }
-        return jsonify(mod.handler(**args))
+        return jsonify(mod.handler(**form.data))
     return render_template(
         '%s.html' % name,
         form=form,
