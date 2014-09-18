@@ -32,8 +32,10 @@ except NameError:
 
 import math
 
+import pybel
 from wtforms import Form
 from wtforms.fields import (
+    Field,
     BooleanField,
     FloatField,
     RadioField,
@@ -46,6 +48,8 @@ from wtforms.fields import (
     FileField,
     FormField,
     SubmitField,
+    FormField,
+    FieldList,
     )
 from wtforms.fields.html5 import (
     SearchField,
@@ -73,8 +77,25 @@ from wtforms.validators import (
     AnyOf,
     NoneOf,
     )
+from wtforms.widgets import TextInput
 
 from .html import html, literal, content, tag
+
+
+class SMILESField(Field):
+    widget = TextInput()
+
+    def _value(self):
+        if self.data:
+            return self.data.write(b'smi').decode('ascii')
+        else:
+            return u''
+
+    def process_formdata(self, valuelist):
+        if valuelist:
+            self.data = pybel.readstring(b'smi', valuelist[0].encode('ascii'))
+        else:
+            self.data = None
 
 
 def frange(start, stop=None, step=1.0):
