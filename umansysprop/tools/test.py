@@ -35,12 +35,16 @@ from ..forms import *
 
 
 class HandlerForm(Form):
-    number1 = IntegerField('First number', validators=[InputRequired()])
-    number2 = IntegerField('Second number', validators=[InputRequired()])
-    temperatures = FloatRangeField('Temperature', validators=[InputRequired(), NumberRange(min=0.0, max=100.0)])
-    compound = SMILESField('Compound', validators=[InputRequired()])
+    number1 = IntegerField('First number')
+    number2 = IntegerField('Second number')
+    temperatures = FloatRangeField('Temperature', validators=[NumberRange(min=0.0, max=100.0)])
+    compounds = SMILESListField('Compounds')
 
 
-def handler(number1, number2, temperatures, compound):
-    return {'result': number1 + number2, 'range': list(temperatures), 'formula': compound.formula}
+def handler(number1, number2, temperatures, compounds):
+    return {
+            'result': number1 + number2,
+            'range': list(temperatures),
+            'formula': [c.formula for c in compounds],
+            }
 

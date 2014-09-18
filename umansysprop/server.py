@@ -38,6 +38,7 @@ from flask import Flask, request, jsonify, render_template
 from . import tools
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 @app.route('/')
 def index():

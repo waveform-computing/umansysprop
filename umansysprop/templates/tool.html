@@ -21,7 +21,7 @@
 {% endmacro %}
 
 {% block content %}
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
   {% block form %}
   {% for field in form %}
   <div class="row">

@@ -78,6 +78,7 @@ from wtforms.validators import (
     NoneOf,
     )
 from wtforms.widgets import TextInput
+from flask import request
 
 from .html import html, literal, content, tag
 
@@ -93,9 +94,100 @@ class SMILESField(Field):
 
     def process_formdata(self, valuelist):
         if valuelist:
-            self.data = pybel.readstring(b'smi', valuelist[0].encode('ascii'))
+            try:
+                self.data = pybel.readstring(b'smi', valuelist[0].encode('ascii'))
+            except IOError:
+                raise ValueError('"%s" is not a valid SMILES string' % valuelist[0])
         else:
             self.data = None
+
+
+class SMILESListField(FormField):
+    def __init__(self, label=None, validators=None, separator='-', **kwargs):
+        max_count = kwargs.pop('max_count', 1000)
+
+        class ListForm(Form):
+            single = SMILESField('Compound', default='', validators=validators)
+            multi = FileField('Compounds')
+
+        super(SMILESListField, self).__init__(
+                ListForm, label, validators=None, separator=separator,
+                **kwargs)
+
+    def __call__(self, **kwargs):
+        # XXX The following is specific to the UManSysProp layout
+        return tag.div(
+            tag.div(
+                tag.label(
+                    tag.input(
+                        id='%s-file' % self.name,
+                        type='checkbox',
+                        value='file'
+                        ),
+                    ' file'
+                    ),
+                class_='medium-2 columns'
+                ),
+            tag.div(
+                self.form.single,
+                self.form.multi,
+                class_='medium-10 columns'
+                ),
+            class_='row'
+            )
+
+    @property
+    def scripts(self):
+        template = """\
+$(document).ready(function() {
+    if ($('#%(multi)s').val()) {
+        $('#%(name)s-file').prop('checked', true);
+        $('#%(single)s').hide();
+        $('#%(single)s').prop('disabled', true);
+    }
+    else {
+        $('#%(name)s-file').prop('checked', false);
+        $('#%(multi)s').hide();
+        $('#%(multi)s').prop('disabled', true);
+    }
+});
+$('#%(name)s-file').change(function() {
+    if (this.checked) {
+        $('#%(single)s').fadeOut('fast', function() {
+            $('#%(single)s').prop('disabled', true);
+            $('#%(multi)s').prop('disabled', false);
+            $('#%(multi)s').fadeIn('fast');
+        });
+    }
+    else {
+        $('#%(multi)s').fadeOut('fast', function() {
+            $('#%(multi)s').prop('disabled', true);
+            $('#%(single)s').prop('disabled', false);
+            $('#%(single)s').fadeIn('fast');
+        });
+    }
+});
+"""
+        return tag.script(literal(template % {
+            'name': self.name,
+            'single': self.form.single.id,
+            'multi': self.form.multi.id,
+            }))
+
+    @property
+    def data(self):
+        if self.form.multi.name in request.files:
+            try:
+                return [
+                    pybel.readstring(b'smi', s.strip())
+                    for (i, s) in enumerate(
+                        request.files[self.form.multi.name].read().splitlines())
+                    ]
+            except IOError:
+                raise ValueError('"%s" is not a valid SMILES string on line %d' % (
+                    s, i))
+        else:
+            return [self.form.single.data]
 
 
 def frange(start, stop=None, step=1.0):
@@ -153,7 +245,7 @@ class FloatRangeField(FormField):
 
     def __call__(self, **kwargs):
         # XXX The following is specific to the UManSysProp layout
-        return literal(''.join((
+        return tag.div(
             tag.div(
                 tag.label(
                     tag.input(
@@ -188,8 +280,9 @@ class FloatRangeField(FormField):
                     class_='form-inline'
                     ),
                 class_='medium-10 columns'
-                )
-            )))
+                ),
+            class_='row'
+            )
 
     @property
     def scripts(self):
