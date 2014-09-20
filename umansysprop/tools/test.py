@@ -37,8 +37,15 @@ from ..forms import *
 class HandlerForm(Form):
     number1 = IntegerField('First number')
     number2 = IntegerField('Second number')
-    temperatures = FloatRangeField('Temperature', validators=[NumberRange(min=0.0, max=100.0)])
-    compounds = SMILESListField('Compounds')
+    temperatures = FloatRangeField('Temperature', max_count=100, validators=[
+        NumberRange(min=0.0, max=100.0)
+        ])
+    compounds = SMILESListField('Compounds', compounds=[
+        ('Succinic acid',  r'C(CC(=O)O)C(=O)O'),
+        ('Oxalic acid',    r'C(=O)(C(=O)O)O'),
+        ('Malonic acid',   r'O=C(O)CC(O)=O'),
+        ('Pinolenic acid', r'CCCCC\C=C\C\C=C\CC\C=C\CCCC(=O)O'),
+        ])
 
 
 def handler(number1, number2, temperatures, compounds):

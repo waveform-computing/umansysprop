@@ -37,7 +37,7 @@ from wtforms import Form
 from wtforms.fields import (
     Field,
     BooleanField,
-    FloatField,
+    FloatField as _FloatField,
     RadioField,
     SelectField,
     SelectMultipleField,
@@ -78,13 +78,50 @@ from wtforms.validators import (
     NoneOf,
     )
 from wtforms.widgets import TextInput
+from wtforms.widgets.html5 import NumberInput
 from flask import request
 
 from .html import html, literal, content, tag
 
 
+class FloatField(_FloatField):
+    widget = NumberInput(step='any')
+
+
 class SMILESField(Field):
+    """
+    Represents a text input which accepts a SMILES strings representing
+    a chemical compound. The field's data is returned as an OpenBabel molecule
+    object.
+
+    :param compounds:
+        If provided, a sequence of ``(label, value)`` tuples which can be
+        selected by drop-down from the text field. Defaults to an empty
+        sequence.
+    """
+
     widget = TextInput()
+    compounds = ()
+
+    def __init__(self, label=None, validators=None, compounds=None, **kwargs):
+        super(SMILESField, self).__init__(label, validators, **kwargs)
+        if compounds is not None:
+            self.compounds = compounds
+
+    def __call__(self, **kwargs):
+        if self.compounds:
+            return literal(
+                tag.datalist(
+                    (
+                        tag.option(value, label=label)
+                        for (label, value) in self.compounds
+                        ),
+                    id='%s-list' % self.id
+                    ) +
+                super(SMILESField, self).__call__(list='%s-list' % self.id)
+                )
+        else:
+            return super(SMILESField, self).__call__(**kwargs)
 
     def _value(self):
         if self.data:
@@ -103,11 +140,26 @@ class SMILESField(Field):
 
 
 class SMILESListField(FormField):
-    def __init__(self, label=None, validators=None, separator='-', **kwargs):
-        max_count = kwargs.pop('max_count', 1000)
+    """
+    Represents a complex input which either accepts a single SMILES string
+    representing a chemical compound, or a file input which accepts an uploaded
+    file containing one SMILES string per line. In either case, the field
+    returns a sequence of OpenBabel molecule objects.
+
+    :param compounds:
+        If provided, a sequence of ``(label, value)`` tuples which can be
+        selected by drop-down from the text field. Defaults to an empty
+        sequence.
+    """
+
+    def __init__(
+            self, label=None, validators=None, separator='-', compounds=None,
+            **kwargs):
 
         class ListForm(Form):
-            single = SMILESField('Compound', default='', validators=validators)
+            single = SMILESField(
+                    'Compound', default='', validators=validators,
+                    compounds=compounds)
             multi = FileField('Compounds')
 
         super(SMILESListField, self).__init__(
@@ -203,8 +255,19 @@ def frange(start, stop=None, step=1.0):
 
 
 class FloatRangeField(FormField):
-    def __init__(self, label=None, validators=None, separator='-', **kwargs):
-        max_count = kwargs.pop('max_count', 1000)
+    """
+    Represents a complex input which defines either a single floating point
+    value, or a range of floating point values evenly spaced between two
+    inclusive end-points. In either case, the field returns a sequence of
+    floating point values as its data.
+
+    :param max_count:
+        Defines the maximum number of values in the sequence. Defaults to 1000.
+    """
+
+    def __init__(
+            self, label=None, validators=None, separator='-', max_count=1000,
+            **kwargs):
         validators = validators or []
         self._min = None
         self._max = None
@@ -332,8 +395,10 @@ $('#%(name)s-range').change(function() {
         stop = self.form.stop.data
         count = self.form.count.data
         if count == 1:
-            return [start]
+            yield start
         else:
             step = (stop - start) / (count - 1)
-            return frange(start, stop + 1e-15, step)
+            for n in frange(start, stop, step):
+                yield n
+            yield stop
 
