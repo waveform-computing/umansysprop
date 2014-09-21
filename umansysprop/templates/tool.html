@@ -21,6 +21,7 @@
 {% endmacro %}
 
 {% block content %}
+{{ super() }}
 <form method="POST" enctype="multipart/form-data">
   {% block form %}
   {% for field in form %}

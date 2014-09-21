@@ -4,7 +4,7 @@
     {% block head %}
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}{% endblock %} - UManSysProp</title>
+    <title>{{ title }} - UManSysProp</title>
     <link rel="stylesheet" href="/static/foundation5/css/foundation.css" />
     <link rel="stylesheet" href="/static/app.css" />
     <link href='http://fonts.googleapis.com/css?family=Nunito' rel='stylesheet' type='text/css'>
@@ -31,6 +31,11 @@
 
     <div id="content">
       {% block content %}
+      <div class="row">
+        <div class="small-12 columns">
+          <h2>{{ title }}</h2>
+        </div>
+      </div>
       {% endblock %}
     </div>
 

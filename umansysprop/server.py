@@ -44,6 +44,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 def index():
     return render_template(
         'index.html',
+        title='Welcome',
         tools=[
             finder.find_module(modname).load_module(modname)
             for (finder, modname, ispkg) in pkgutil.iter_modules(
@@ -61,7 +62,7 @@ def tool(name):
     except KeyError:
         loader = pkgutil.get_loader(mod_name)
         mod = loader.load_module(mod_name)
-    assert hasattr(mod, 'Form')
+    assert hasattr(mod, 'HandlerForm')
     assert hasattr(mod, 'handler')
 
     # Present the tool's input form, or execute the tool's handler callable
@@ -71,6 +72,7 @@ def tool(name):
         return jsonify(mod.handler(**form.data))
     return render_template(
         '%s.html' % name,
+        title=mod.__doc__,
         form=form,
         )
 

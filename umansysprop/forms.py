@@ -95,7 +95,7 @@ class SMILESField(Field):
     object.
 
     :param compounds:
-        If provided, a sequence of ``(label, value)`` tuples which can be
+        If provided, a sequence of ``(value, label)`` tuples which can be
         selected by drop-down from the text field. Defaults to an empty
         sequence.
     """
@@ -114,7 +114,7 @@ class SMILESField(Field):
                 tag.datalist(
                     (
                         tag.option(value, label=label)
-                        for (label, value) in self.compounds
+                        for (value, label) in self.compounds
                         ),
                     id='%s-list' % self.id
                     ) +
@@ -147,7 +147,7 @@ class SMILESListField(FormField):
     returns a sequence of OpenBabel molecule objects.
 
     :param compounds:
-        If provided, a sequence of ``(label, value)`` tuples which can be
+        If provided, a sequence of ``(value, label)`` tuples which can be
         selected by drop-down from the text field. Defaults to an empty
         sequence.
     """
