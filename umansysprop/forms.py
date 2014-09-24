@@ -395,10 +395,8 @@ $('#%(name)s-range').change(function() {
         stop = self.form.stop.data
         count = self.form.count.data
         if count == 1:
-            yield start
+            return [start]
         else:
             step = (stop - start) / (count - 1)
-            for n in frange(start, stop, step):
-                yield n
-            yield stop
+            return list(frange(start, stop, step)) + [stop]
 
