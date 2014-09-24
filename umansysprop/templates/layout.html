@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title }} - UManSysProp</title>
-    <link rel="stylesheet" href="/static/foundation5/css/foundation.css" />
-    <link rel="stylesheet" href="/static/app.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='foundation5/css/foundation.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
     <link href='http://fonts.googleapis.com/css?family=Nunito' rel='stylesheet' type='text/css'>
-    <script src="/static/foundation5/js/vendor/modernizr.js"></script>
+    <script src="{{ url_for('static', filename='foundation5/js/vendor/modernizr.js') }}"></script>
     {% endblock %}
   </head>
   <body>
@@ -17,12 +17,12 @@
       {% block header %}
       <div class="row">
         <div class="small-12 columns">
-          <img src="/static/penicillin.png" height="250" />
+          <img src="{{ url_for('static', filename='penicillin.png') }}" height="250" />
         </div>
       </div>
       <div class="row">
         <div class="large-6 medium-4 columns">
-          <h1>UManSysProp</h1>
+          <a href="{{ url_for('index') }}"><h1>UManSysProp</h1></a>
           <h5>Multiphase system online property prediction</h5>
         </div>
       </div>
@@ -56,8 +56,8 @@
     </footer>
 
     {% block scripts %}
-    <script src="/static/foundation5/js/vendor/jquery.js"></script>
-    <script src="/static/foundation5/js/foundation.min.js"></script>
+    <script src="{{ url_for('static', filename='foundation5/js/vendor/jquery.js') }}"></script>
+    <script src="{{ url_for('static', filename='foundation5/js/foundation.min.js') }}"></script>
     <script>
       $(document).foundation();
     </script>
