@@ -17,8 +17,10 @@
 # You should have received a copy of the GNU General Public License along with
 # umansysprop.  If not, see <http://www.gnu.org/licenses/>.
 
-"""An online system for calculating the properties of individual organic
-molecules and ensemble mixtures"""
+"""
+An online framework for calculating the properties of individual organic
+molecules and ensemble mixtures
+"""
 
 from __future__ import (
     unicode_literals,
@@ -33,9 +35,10 @@ import io
 import os
 import pkgutil
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, render_template, make_response
 
 from . import tools
+from . import renderers
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -69,7 +72,19 @@ def tool(name):
     # based on whether the HTTP request is a GET or a POST
     form = mod.HandlerForm(request.form)
     if request.method == 'POST' and form.validate():
-        return jsonify(mod.handler(**form.data))
+        converters = {
+            'application/json': renderers.render_json,
+            'application/xml':  renderers.render_xml,
+            'text/html':        renderers.render_html,
+            }
+        mimetype = request.accept_mimetypes.best_match(converters.keys())
+        result = mod.handler(**form.data)
+        dimensions = result.pop('dimensions')
+        response = make_response(
+                converters[mimetype](result, dimensions=dimensions)
+                )
+        response.mimetype = mimetype
+        return response
     return render_template(
         '%s.html' % name,
         title=mod.__doc__,
