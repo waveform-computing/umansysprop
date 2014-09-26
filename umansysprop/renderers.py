@@ -65,6 +65,10 @@ def render_html(obj, **kwargs):
             tag.thead(
                 tag.tr(
                     tag.th(''),
+                    tag.th(dimensions[0][1], colspan=len(col_keys)),
+                    ),
+                tag.tr(
+                    tag.th(dimensions[1][1]),
                     *(tag.th(key) for key in col_keys)
                     )
                 ),

@@ -80,9 +80,14 @@ def tool(name):
         mimetype = request.accept_mimetypes.best_match(converters.keys())
         result = mod.handler(**form.data)
         dimensions = result.pop('dimensions')
-        response = make_response(
-                converters[mimetype](result, dimensions=dimensions)
-                )
+        result = converters[mimetype](result, dimensions=dimensions)
+        # If we're generating HTML, wrap the result in a template
+        if mimetype == 'text/html':
+            result = render_template(
+                'result.html',
+                title=mod.__doc__,
+                result=result)
+        response = make_response(result)
         response.mimetype = mimetype
         return response
     return render_template(
