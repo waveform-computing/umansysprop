@@ -43,7 +43,7 @@ __requires__ = [
     ]
 
 __extra_requires__ = {
-    'server': ['Flask', 'wtforms'],
+    'server': ['Flask', 'wtforms', 'docutils'],
     'client': [],
     'doc':    ['sphinx'],
     }
