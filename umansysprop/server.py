@@ -30,9 +30,9 @@ from __future__ import (
     )
 str = type('')
 
-import re
 import pkgutil
 import json
+from textwrap import dedent
 
 from flask import Flask, request, url_for, render_template, make_response, jsonify
 from docutils import core
@@ -61,22 +61,10 @@ def index():
         )
 
 
-indent_re = re.compile(r'^\s*')
 def render_docs(docstring):
     if not isinstance(docstring, str):
         docstring = docstring.decode('utf-8')
-    indent = None
-    s = ''
-    for line in docstring.splitlines():
-        if indent is None:
-            if line.lstrip():
-                indent = indent_re.search(line).group(0)
-                s = line[len(indent):] + '\n'
-        elif line.startswith(indent):
-            s += line[len(indent):] + '\n'
-        else:
-            s += line + '\n'
-    docstring = s
+    docstring = dedent(docstring)
     result = core.publish_parts(
             docstring, writer_name='html', settings_overrides={
                 'input_encoding': 'unicode',
