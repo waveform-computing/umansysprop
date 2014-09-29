@@ -44,8 +44,8 @@ import requests
 class UManSysProp(object):
 
     _method_template = """\
-def {method_name}(self, {method_params}):
-    return self._json_rpc("{method_name}", {method_call})
+def {name}(self, {params}):
+    return self._json_rpc("{url}", {call})
 """
 
     def __init__(self, base_url='http://umansysprop.seaes.manchester.ac.uk/'):
@@ -58,9 +58,10 @@ def {method_name}(self, {method_params}):
             # defines.  The method will take the parameters specified by the
             # API, and will have a doc-string also specified by the API
             method_definition = self._method_template.format(
-                    method_name=name,
-                    method_params=', '.join(props['params']),
-                    method_call=', '.join(
+                    name=name,
+                    url=props['url'],
+                    params=', '.join(props['params']),
+                    call=', '.join(
                         '%s=%s' % (param, param) for param in props['params'])
                     )
             l = {}
@@ -69,9 +70,9 @@ def {method_name}(self, {method_params}):
             f.__doc__ = props['doc']
             setattr(self, name, types.MethodType(f, self))
 
-    def _json_rpc(self, name, **params):
+    def _json_rpc(self, url, **params):
         response = requests.post(
-                urljoin(self._base_url, 'api/%s' % name),
+                urljoin(self._base_url, url),
                 data=json.dumps(params),
                 headers={
                     'Accept': 'application/json',

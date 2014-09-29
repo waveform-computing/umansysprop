@@ -30,13 +30,12 @@ from __future__ import (
     )
 str = type('')
 
-import sys
-import io
-import os
+import re
 import pkgutil
 import json
 
-from flask import Flask, request, render_template, make_response, jsonify
+from flask import Flask, request, url_for, render_template, make_response, jsonify
+from docutils import core
 
 from . import tools
 from . import renderers
@@ -62,15 +61,49 @@ def index():
         )
 
 
+indent_re = re.compile(r'^\s*')
+def render_docs(docstring):
+    if not isinstance(docstring, str):
+        docstring = docstring.decode('utf-8')
+    indent = None
+    s = ''
+    for line in docstring.splitlines():
+        if indent is None:
+            if line.lstrip():
+                indent = indent_re.search(line).group(0)
+                s = line[len(indent):] + '\n'
+        elif line.startswith(indent):
+            s += line[len(indent):] + '\n'
+        else:
+            s += line + '\n'
+    docstring = s
+    result = core.publish_parts(
+            docstring, writer_name='html', settings_overrides={
+                'input_encoding': 'unicode',
+                'output_encoding': 'unicode',
+                })
+    return result['fragment']
+
+
 @app.route('/api')
 def api():
-    mimetype = request.accept_mimetypes.best_match(['text/html', 'application/json'])
+    mimetype = request.accept_mimetypes.best_match([
+        'text/html',
+        'application/json',
+        ])
     if mimetype == 'text/html':
-        pass
+        return render_template(
+            'api.html',
+            title='JSON API Documentation',
+            tools=tools,
+            render_docs=render_docs,
+            )
     elif mimetype == 'application/json':
         return jsonify(**{
             mod_name: {
-                'doc': mod.__doc__.strip(),
+                'url': url_for('call', name=mod_name),
+                'title': (mod.__doc__ or '').strip(),
+                'doc': (mod.handler.__doc__ or '').strip(),
                 'params': [
                     field.name for field in mod.HandlerForm()
                     ],

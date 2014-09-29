@@ -18,8 +18,7 @@
 # umansysprop.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-A module demonstrating the construction of calculations for the UManSysProp web
-server.
+Demo function
 """
 
 from __future__ import (

@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+{% block content %}
+{{ super() }}
+<div class="row">
+  <div class="small-12 columns">
+    <p>The UManSysProp functions are also accessible via a simple REST API.  A
+    client library for Python is provided which permits simple access to the
+    functions in an idiomatic Python form. For other languages and systems, the
+    details of the REST API are given below.</p>
+
+    <p>Each function is associated with a URL; HTTP POST requests can be made
+    to this URL with named parameter values encoded as JSON in the HTTP request
+    body. The HTTP request's <code>Accept</code> header must be set to
+    <code>application/json</code> (preferentially) to indicate that HTML should
+    not be returned. Assuming the parameter values are acceptable for the
+    utility called, the results will be returned as a JSON object in the HTTP
+    response. The resulting JSON object will have two top-level properties:</p>
+
+    <ul>
+      <li><code>result</code> - this contains the calculation results as a
+      series of nested objects.  For example, the top layer of objects may
+      correspond to the requested compounds, while the next layer of objects
+      may correspond to the range of temperatures requested.</li>
+      <li><code>dimensions</code> - this contains a sequence of values
+      detailing what objects at each layer of <code>result</code> represent. In
+      the example above, this would contain <code>[['compound', 'Compound'],
+      ['temperature', 'Temperature (K)']]</code> indicating that the top layer
+      of objects are compounds, and the next layer are temperatures.  The first
+      value in each pair is a code-friendly label for the dimension while the
+      second is a human readable description.</li>
+    </ul>
+
+    <p>For example, the following request:</p>
+
+    <pre><code>POST /api/vapour_pressure HTTP/1.1
+Host: localhost:5000
+Content-Length: 101
+Accept-Encoding: gzip, deflate
+Accept: application/json
+User-Agent: python-requests/2.4.1 CPython/2.7.6 Linux/3.13.0-36-generic
+Connection: keep-alive
+Content-Type: applicaton/json
+
+{"vp_method": "nannoolal", "bp_method": "nannoolal", "temperatures": [298.15], "compounds": ["CCCC"]}</code></pre>
+
+    <p>Might produce the following response:</p>
+
+    <pre><code>HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 131
+Server: Werkzeug/0.9.6 Python/2.7.6
+Date: Mon, 29 Sep 2014 18:12:51 GMT
+
+{"dimensions": [["compound", "Compound"], ["temperature", "Temperature (K)"]],
+"result": {"CCCC": {"298.15": 0.22091492301164387}}}</code></pre>
+
+    <p>Standard HTTP status codes are used to indicate errors. For example, in
+    the case that not all parameters are provided for a function the following
+    response might be returned:</p>
+
+    <pre><code>EXAMPLE</code></pre>
+
+    <p>The available functions are documented below. For programmatic use you
+    can also query this page with the HTTP request's <code>Accept</code> header
+    set to <code>application/json</code> in which case the response will
+    contain the following information in a JSON object:</p>
+
+    {% for name, tool in tools.items()|sort %}
+    <hr>
+    <h3>{{ tool.__doc__ }}</h3>
+    <ul class="no-bullet">
+    <li><strong>URL:</strong> <code>{{ url_for('call', name=name) }}</code></li>
+    <li><strong>Parameters:</strong> <code>{{ tool.HandlerForm()|join(', ', attribute='name') }}</code></li>
+  </ul>
+    <p>{{ render_docs(tool.handler.__doc__ or '')|safe }}</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -39,13 +39,12 @@ __url__          = 'http://umansysprop.readthedocs.org/'
 __platforms__    = 'ALL'
 
 __requires__ = [
-    'Flask',
-    'wtforms',
+    'requests',
     ]
 
 __extra_requires__ = {
     'server': ['Flask', 'wtforms'],
-    'client': ['requests'],
+    'client': [],
     'doc':    ['sphinx'],
     }
 
