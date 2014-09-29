@@ -41,11 +41,11 @@ __platforms__    = 'ALL'
 __requires__ = [
     'Flask',
     'wtforms',
-    'numpy',
-    'scipy',
     ]
 
 __extra_requires__ = {
+    'server': ['Flask', 'wtforms'],
+    'client': ['requests'],
     'doc':    ['sphinx'],
     }
 

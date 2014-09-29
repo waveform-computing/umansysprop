@@ -26,11 +26,11 @@
         <tr><th>Name</th><th>Description</th></tr>
       </thead>
       <tbody>
-        {% for tool in tools %}
+        {% for tool_name, tool in tools.items()|sort %}
         <tr>
           <td>
-            <a href="{{ url_for('tool', name=tool.__name__.split('.')[-1]) }}">
-              {{ tool.__name__.split('.')[-1] }}
+            <a href="{{ url_for('tool', name=tool_name) }}">
+              {{ tool_name }}
             </a>
           </td>
           <td>{{ tool.__doc__ }}</td>

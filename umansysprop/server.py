@@ -34,53 +34,83 @@ import sys
 import io
 import os
 import pkgutil
+import json
 
-from flask import Flask, request, render_template, make_response
+from flask import Flask, request, render_template, make_response, jsonify
 
 from . import tools
 from . import renderers
+from . import forms
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+tools = {
+    modname.split('.')[-1]: finder.find_module(modname).load_module(modname)
+    for (finder, modname, ispkg) in pkgutil.iter_modules(
+        tools.__path__, prefix=tools.__name__ + '.')
+    if not ispkg and modname != 'template'
+    }
+
 
 @app.route('/')
 def index():
     return render_template(
         'index.html',
         title='Welcome',
-        tools=[
-            finder.find_module(modname).load_module(modname)
-            for (finder, modname, ispkg) in pkgutil.iter_modules(
-                tools.__path__, prefix=tools.__name__ + '.')
-            if not ispkg and modname != 'template'
-            ]
+        tools=tools,
         )
+
+
+@app.route('/api')
+def api():
+    mimetype = request.accept_mimetypes.best_match(['text/html', 'application/json'])
+    if mimetype == 'text/html':
+        pass
+    elif mimetype == 'application/json':
+        return jsonify(**{
+            mod_name: {
+                'doc': mod.__doc__.strip(),
+                'params': [
+                    field.name for field in mod.HandlerForm()
+                    ],
+                }
+            for mod_name, mod in tools.items()
+            })
+    else:
+        return 'Not acceptable', 406
+
+
+@app.route('/api/<name>', methods=['POST'])
+def call(name):
+    # Fail if the RPC call has more than a meg of data
+    if request.content_length > 1048576:
+        return 'Excessively long request', 413
+    mod = tools[name]
+    args = json.loads(request.get_data(cache=False, as_text=True))
+    args = forms.convert_args(mod.HandlerForm(), args)
+    result = mod.handler(**args)
+    result = renderers.render_json(result)
+    response = make_response(result)
+    response.mimetype = 'application/json'
+    return response
+
 
 @app.route('/tool/<name>', methods=['GET', 'POST'])
 def tool(name):
-    # Find and load the module containing the specified tool
-    mod_name = '%s.%s' % (tools.__name__, name)
-    try:
-        mod = sys.modules[mod_name]
-    except KeyError:
-        loader = pkgutil.get_loader(mod_name)
-        mod = loader.load_module(mod_name)
-    assert hasattr(mod, 'HandlerForm')
-    assert hasattr(mod, 'handler')
-
     # Present the tool's input form, or execute the tool's handler callable
     # based on whether the HTTP request is a GET or a POST
+    mod = tools[name]
     form = mod.HandlerForm(request.form)
     if request.method == 'POST' and form.validate():
-        converters = {
+        renderer_by_type = {
             'application/json': renderers.render_json,
             'application/xml':  renderers.render_xml,
             'text/html':        renderers.render_html,
             }
-        mimetype = request.accept_mimetypes.best_match(converters.keys())
+        mimetype = request.accept_mimetypes.best_match(renderer_by_type.keys())
         result = mod.handler(**form.data)
-        dimensions = result.pop('dimensions')
-        result = converters[mimetype](result, dimensions=dimensions)
+        result = renderer_by_type[mimetype](result)
         # If we're generating HTML, wrap the result in a template
         if mimetype == 'text/html':
             result = render_template(

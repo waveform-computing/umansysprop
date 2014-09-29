@@ -31,6 +31,7 @@ except NameError:
 
 
 import math
+import decimal
 
 import pybel
 from wtforms import Form
@@ -84,6 +85,31 @@ from flask import request
 from .html import html, literal, content, tag
 
 
+def smiles(s):
+    """
+    Converts *s* into an OpenBabel :class:`Molecule` object. Raises
+    :exc:`ValueError` if *s* is not a valid SMILES string.
+    """
+    if isinstance(s, str):
+        s = s.encode('ascii')
+    try:
+        return pybel.readstring(b'smi', s)
+    except IOError:
+        raise ValueError('"%s" is not a valid SMILES string' % s)
+
+
+def frange(start, stop=None, step=1.0):
+    """
+    Floating point variant of :func:`range`. Note that this variant has several
+    inefficiencies compared to the built-in range, notably that reversal of
+    the resulting generator relies enumeration of the generator.
+    """
+    if stop is None:
+        stop, start = start, 0.0
+    count = int(math.ceil((stop - start) / step))
+    return (start + n * step for n in range(count))
+
+
 class FloatField(_FloatField):
     widget = NumberInput(step='any')
 
@@ -131,10 +157,7 @@ class SMILESField(Field):
 
     def process_formdata(self, valuelist):
         if valuelist:
-            try:
-                self.data = pybel.readstring(b'smi', valuelist[0].encode('ascii'))
-            except IOError:
-                raise ValueError('"%s" is not a valid SMILES string' % valuelist[0])
+            self.data = smiles(valuelist[0])
         else:
             self.data = None
 
@@ -230,28 +253,12 @@ $('#%(name)s-file').change(function() {
     def data(self):
         if self.form.multi.name in request.files:
             try:
-                return [
-                    pybel.readstring(b'smi', s.strip())
-                    for (i, s) in enumerate(
-                        request.files[self.form.multi.name].read().splitlines())
-                    ]
-            except IOError:
-                raise ValueError('"%s" is not a valid SMILES string on line %d' % (
-                    s, i))
+                return [smiles(s.strip()) for i, s in enumerate(
+                    request.files[self.form.multi.name].read().splitlines())]
+            except ValueError as e:
+                raise ValueError('%s on line %d' % (str(e), i))
         else:
             return [self.form.single.data]
-
-
-def frange(start, stop=None, step=1.0):
-    """
-    Floating point variant of :func:`range`. Note that this variant has several
-    inefficiencies compared to the built-in range, notably that reversal of
-    the resulting generator relies enumeration of the generator.
-    """
-    if stop is None:
-        stop, start = start, 0.0
-    count = int(math.ceil((stop - start) / step))
-    return (start + n * step for n in range(count))
 
 
 class FloatRangeField(FormField):
@@ -399,4 +406,26 @@ $('#%(name)s-range').change(function() {
         else:
             step = (stop - start) / (count - 1)
             return list(frange(start, stop, step)) + [stop]
+
+
+
+def convert_args(form, args):
+    """
+    Given a *form* and a dictionary of *args* which has been decoded from JSON,
+    returns *args* with the type of each value converted for the corresponding
+    field.
+    """
+    conversion = {
+        IntegerField:    int,
+        FloatField:      float,
+        DecimalField:    decimal.Decimal,
+        BooleanField:    bool,
+        SMILESField:     smiles,
+        SMILESListField: lambda l: [smiles(s) for s in l],
+        FloatRangeField: lambda l: [float(f)  for f in l],
+        }
+    return {
+        field.name: conversion.get(field.__class__, lambda x: x)(args[field.name])
+        for field in form
+        }
 

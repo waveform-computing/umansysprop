@@ -32,13 +32,12 @@ from .html import TagFactory
 
 
 def render_json(obj, **kwargs):
-    kwargs.pop('dimensions')
     return json.dumps(obj, **kwargs)
 
 
 def render_xml(obj, **kwargs):
     tag = TagFactory(xml=True)
-    dimensions = kwargs['dimensions']
+    dimensions = obj['dimensions']
 
     def process_obj(obj, dim):
         if dim >= len(dimensions):
@@ -50,12 +49,11 @@ def render_xml(obj, **kwargs):
                 for key, value in obj.items()
                 )
 
-    return tag.result(process_obj(obj, 0))
+    return tag.result(process_obj(obj['result'], 0))
 
 
 def render_html(obj, **kwargs):
     tag = TagFactory(xml=False)
-    dimensions = kwargs['dimensions']
 
     def render_table(obj, dimensions):
         assert len(dimensions) == 2
@@ -91,6 +89,6 @@ def render_html(obj, **kwargs):
         else:
             return render_table(obj, dimensions)
 
-    return render_section(obj, dimensions)
+    return render_section(obj['result'], obj['dimensions'])
 
 
