@@ -14,45 +14,27 @@
     <code>application/json</code> (preferentially) to indicate that HTML should
     not be returned. Assuming the parameter values are acceptable for the
     utility called, the results will be returned as a JSON object in the HTTP
-    response. The resulting JSON object will have two top-level properties:</p>
+    response. The resulting JSON object will have at least one top-level
+    property:</p>
 
     <ul>
-      <li><code>result</code> - this contains the calculation results as a
-      series of nested objects.  For example, the top layer of objects may
-      correspond to the requested compounds, while the next layer of objects
-      may correspond to the range of temperatures requested.</li>
-      <li><code>dimensions</code> - this contains a sequence of values
-      detailing what objects at each layer of <code>result</code> represent. In
-      the example above, this would contain <code>[['compound', 'Compound'],
-      ['temperature', 'Temperature (K)']]</code> indicating that the top layer
-      of objects are compounds, and the next layer are temperatures.  The first
-      value in each pair is a code-friendly label for the dimension while the
-      second is a human readable description.</li>
+      <li><code>tables</code> - this contains a definition of all tables in
+      the result. It is keyed by the top-level name of each table, and each
+      value is an object defining the table's title, and the properties of
+      its rows and columns.</li>
+      <li><code>table<em>n</em></code> - all other top level objects represent
+      a table of the result. Each table is represented as a mapping of
+      mappings.  The first mapping represents the columns, the inner mappings
+      represent the rows.</li>
     </ul>
 
     <p>For example, the following request:</p>
 
-    <pre><code>POST /api/vapour_pressure HTTP/1.1
-Host: localhost:5000
-Content-Length: 101
-Accept-Encoding: gzip, deflate
-Accept: application/json
-User-Agent: python-requests/2.4.1 CPython/2.7.6 Linux/3.13.0-36-generic
-Connection: keep-alive
-Content-Type: applicaton/json
-
-{"vp_method": "nannoolal", "bp_method": "nannoolal", "temperatures": [298.15], "compounds": ["CCCC"]}</code></pre>
+    <pre><code>EXAMPLE</code></pre>
 
     <p>Might produce the following response:</p>
 
-    <pre><code>HTTP/1.0 200 OK
-Content-Type: application/json
-Content-Length: 131
-Server: Werkzeug/0.9.6 Python/2.7.6
-Date: Mon, 29 Sep 2014 18:12:51 GMT
-
-{"dimensions": [["compound", "Compound"], ["temperature", "Temperature (K)"]],
-"result": {"CCCC": {"298.15": 0.22091492301164387}}}</code></pre>
+    <pre><code>EXAMPLE</code></pre>
 
     <p>Standard HTTP status codes are used to indicate errors. For example, in
     the case that not all parameters are provided for a function the following
@@ -70,7 +52,7 @@ Date: Mon, 29 Sep 2014 18:12:51 GMT
     <h3>{{ tool.__doc__ }}</h3>
     <ul class="no-bullet">
     <li><strong>URL:</strong> <code>{{ url_for('call', name=name) }}</code></li>
-    <li><strong>Parameters:</strong> <code>{{ tool.HandlerForm()|join(', ', attribute='name') }}</code></li>
+    <li><strong>Parameters:</strong> <code>{{ tool.HandlerForm()|rejectattr('name', 'equalto', 'csrf_token')|join(', ', attribute='name') }}</code></li>
   </ul>
     <p>{{ render_docs(tool.handler.__doc__ or '')|safe }}</p>
     {% endfor %}
