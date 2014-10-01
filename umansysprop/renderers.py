@@ -37,58 +37,55 @@ def render_json(obj, **kwargs):
 
 def render_xml(obj, **kwargs):
     tag = TagFactory(xml=True)
-    dimensions = obj['dimensions']
 
-    def process_obj(obj, dim):
-        if dim >= len(dimensions):
-            return (obj,)
-        else:
-            tag_name, description = dimensions[dim]
-            return (
-                getattr(tag, tag_name)(*process_obj(value, dim + 1), value=key)
-                for key, value in obj.items()
-                )
+    def process_table(table_id):
+        col_keys = sorted(obj[table_id].keys())
+        row_keys = sorted(obj[table_id][col_keys[0]].keys())
+        return tag.table(
+            tag.columns(
+                (tag.column(id=col_key) for col_key in col_keys),
+                title=obj['tables'][table_id]['cols'][2]
+                ),
+            tag.rows((
+                tag.row(
+                    (tag.data(value=obj[table_id][col_key][row_key]) for col_key in col_keys),
+                    id=row_key
+                ) for row_key in row_keys),
+                title=obj['tables'][table_id]['rows'][2]
+                ),
+            id=table_id,
+            title=obj['tables'][table_id]['title']
+            )
 
-    return tag.result(process_obj(obj['result'], 0))
+    return tag.tables(process_table(table_id) for table_id in obj['tables'])
 
 
 def render_html(obj, **kwargs):
     tag = TagFactory(xml=False)
 
-    def render_table(obj, dimensions):
-        assert len(dimensions) == 2
-        col_keys = sorted(obj.keys())
-        row_keys = sorted(obj[col_keys[0]].keys())
+    def render_table(table_id):
+        col_keys = sorted(obj[table_id].keys())
+        row_keys = sorted(obj[table_id][col_keys[0]].keys())
         return tag.table(
+            tag.caption(obj['tables'][table_id]['title']),
             tag.thead(
                 tag.tr(
                     tag.th(''),
-                    tag.th(dimensions[0][1], colspan=len(col_keys)),
+                    tag.th(obj['tables'][table_id]['cols'][2], colspan=len(col_keys)),
                     ),
                 tag.tr(
-                    tag.th(dimensions[1][1]),
+                    tag.th(obj['tables'][table_id]['rows'][2]),
                     *(tag.th(key) for key in col_keys)
                     )
                 ),
-            tag.tbody(
+            tag.tbody((
                 tag.tr(
                     tag.th(row_key),
-                    *(tag.td(obj[col_key][row_key]) for col_key in col_keys)
+                    *(tag.td(obj[table_id][col_key][row_key]) for col_key in col_keys)
                     )
-                for row_key in row_keys
-                )
+                for row_key in row_keys),
+                ),
             )
 
-    def render_section(obj, dimensions):
-        if len(dimensions) > 2:
-            for key, value in obj.items():
-                return tag.div(
-                    tag.h2(key),
-                    render_section(value, dimensions[1:])
-                    )
-        else:
-            return render_table(obj, dimensions)
-
-    return render_section(obj['result'], obj['dimensions'])
-
+    return tag.div(render_table(table_id) for table_id in obj['tables'])
 

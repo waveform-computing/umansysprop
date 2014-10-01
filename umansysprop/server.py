@@ -42,7 +42,10 @@ from . import renderers
 from . import forms
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+# maximum file upload is 1Mb
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
+# equalto was only added in Jinja 2.8 ?!
+app.jinja_env.tests.setdefault('equalto', lambda value, other: value == other)
 
 tools = {
     modname.split('.')[-1]: finder.find_module(modname).load_module(modname)
@@ -94,6 +97,7 @@ def api():
                 'doc': (mod.handler.__doc__ or '').strip(),
                 'params': [
                     field.name for field in mod.HandlerForm()
+                    if field.name != 'csrf_token'
                     ],
                 }
             for mod_name, mod in tools.items()
@@ -123,7 +127,7 @@ def tool(name):
     # based on whether the HTTP request is a GET or a POST
     mod = tools[name]
     form = mod.HandlerForm(request.form)
-    if request.method == 'POST' and form.validate():
+    if form.validate_on_submit():
         renderer_by_type = {
             'application/json': renderers.render_json,
             'application/xml':  renderers.render_xml,
@@ -149,6 +153,7 @@ def tool(name):
 
 
 def main():
+    app.secret_key = 'testing'
     app.run(
         host='0.0.0.0',
         debug=True

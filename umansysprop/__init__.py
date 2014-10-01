@@ -43,7 +43,7 @@ __requires__ = [
     ]
 
 __extra_requires__ = {
-    'server': ['Flask', 'wtforms', 'docutils'],
+    'server': ['flask', 'flask-wtf', 'wtforms', 'docutils'],
     'client': [],
     'doc':    ['sphinx'],
     }

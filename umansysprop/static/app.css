@@ -26,12 +26,6 @@ header img {
 footer .columns { background: #ddd; }
 footer p { margin: 10px 0; font-size: 10pt; }
 
-div.form-inline input,
-div.form-inline label {
-    display: inline;
-    width: auto;
-}
-
 pre code {
     display: block;
     margin: 10px 0;

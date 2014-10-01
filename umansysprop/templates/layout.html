@@ -17,7 +17,8 @@
       {% block header %}
       <div class="row">
         <div class="small-12 columns">
-          <img src="{{ url_for('static', filename='logo.png') }}" height="250" />
+          <img src="{{ url_for('static', filename='logo.png') }}" style="opacity:0.3" class="show-for-small-only" height="250" />
+          <img src="{{ url_for('static', filename='logo.png') }}" style="opacity:0.7" class="show-for-medium-up" height="250" />
         </div>
       </div>
       <div class="row">

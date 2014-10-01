@@ -87,7 +87,9 @@ class TagFactory(object):
     arguments will be used as attributes for the element. If the element or
     attribute you wish to name is a reserved word in Python, you can simply
     append underscore ("_") to the name (all trailing underscore characters
-    will be stripped implicitly).
+    will be stripped implicitly). All underscores ("_") within attribute names
+    will be replaced with dash ("-") as a convenience for creating attributes
+    like "data-toggle".
 
     For example::
 
@@ -98,6 +100,8 @@ class TagFactory(object):
         '<a>foo</a>'
         >>> tag.a('foo', bar='baz')
         '<a bar="baz">foo</a>'
+        >>> tag.div('foo', data_toggle=55.2)
+        '<div data-toggle="55.2">foo</div>'
 
     You can explicitly suppress the generation of either the opening or
     closing tags by setting the ``_open`` and ``_close`` parameters to False
@@ -155,10 +159,10 @@ class TagFactory(object):
                 _tag,
                 ''.join(
                     ' %s="%s"' % (
-                        k.rstrip('_'),
-                        k.rstrip('_') if v is True else content(v).__html__()
+                        k, k if v is True else content(v).__html__()
                         )
-                    for (k, v) in kwargs.items()
+                    for (_k, v) in kwargs.items()
+                    for k in (_k.rstrip('_').replace('_', '-'),)
                     if v is not None
                     and v is not False)
                 )
