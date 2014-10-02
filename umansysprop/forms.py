@@ -737,7 +737,6 @@ $('div#%(id)s').each(function() {
             return list(frange(start, stop, step)) + [stop]
 
 
-
 def convert_args(form, args):
     """
     Given a *form* and a dictionary of *args* which has been decoded from JSON,
@@ -751,10 +750,12 @@ def convert_args(form, args):
         BooleanField:    bool,
         SMILESField:     smiles,
         SMILESListField: lambda l: [smiles(s) for s in l],
-        FloatRangeField: lambda l: [float(f)  for f in l],
+        SMILESDictField: lambda l: {smiles(s): float(v) for (s, v) in l.items()},
+        FloatRangeField: lambda l: [float(f) for f in l],
         }
     return {
         field.name: conversion.get(field.__class__, lambda x: x)(args[field.name])
         for field in form
+        if field.name != 'csrf_token'
         }
 

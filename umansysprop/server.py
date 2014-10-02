@@ -113,7 +113,7 @@ def call(name):
         return 'Excessively long request', 413
     mod = tools[name]
     args = json.loads(request.get_data(cache=False, as_text=True))
-    args = forms.convert_args(mod.HandlerForm(), args)
+    args = forms.convert_args(mod.HandlerForm(formdata=None), args)
     result = mod.handler(**args)
     result = renderers.render_json(result)
     response = make_response(result)

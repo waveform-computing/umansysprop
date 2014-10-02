@@ -36,7 +36,7 @@ from ..forms import *
 class HandlerForm(Form):
     number1 = IntegerField('First number')
     number2 = IntegerField('Second number')
-    temperatures = FloatRangeField('Temperature', max_count=100, validators=[
+    temperatures = FloatRangeField('Temperature', max_entries=100, validators=[
         NumberRange(min=0.0, max=100.0)
         ])
     compounds = SMILESListField('Compounds', compounds=[
