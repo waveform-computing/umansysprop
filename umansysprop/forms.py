@@ -170,223 +170,6 @@ class SMILESField(Field):
             self.data = None
 
 
-class SMILESDictField(FormField):
-    """
-    Represents a compound input which defines a mapping of SMILES strings to
-    floating point values, or accepts a file upload containing one SMILES
-    string and one floating point value separated by whitespace, per line. The
-    field's data is returned as a mapping of OpenBabel Molecule objects to
-    float values.
-
-    Additional keyword arguments introduced by this class are:
-
-    :param entry_label:
-        Provides the label appearing above the SMILES text entry field
-
-    :param data_label:
-        Provides the label appearing above the floating point entry field
-
-    :param upload_label:
-        Provides the label appearing beside the file upload field
-
-    :param compounds:
-        If provided, a sequence of ``(value, label)`` tuples which can be
-        selected by drop-down from the text-entry field. Defaults to an empty
-        sequence.
-
-    :param min_entries:
-        The minimum number of entries permitted in the field. Defaults to 0.
-
-    :param max_entries:
-        The maximum number of entries permitted in the field. Defaults to 100.
-    """
-
-    def __init__(self, label=None, entry_label=None, data_label=None,
-            upload_label=None, validators=None, compounds=None, separator='-',
-            min_entries=0, max_entries=100, **kwargs):
-
-        class MapForm(SubForm):
-            smiles = SMILESField(entry_label, compounds=compounds)
-            data = FloatField(data_label)
-
-        class ListForm(SubForm):
-            entry = FieldList(
-                FormField(MapForm),
-                min_entries=min_entries, max_entries=max_entries)
-            upload = FileField(upload_label)
-
-        super(SMILESDictField, self).__init__(
-                ListForm, label, separator=separator, **kwargs)
-
-    @property
-    def data(self):
-        if self.form.upload.name in request.files:
-            try:
-                result = {
-                    smiles(key): float(value)
-                    for i, _line in enumerate(
-                        request.files[self.form.upload.name].read().splitlines(),
-                        start=1)
-                    for line in (_line.strip(),)
-                    for key, value in (line.split(None, 1),)
-                    if line and not line.startswith('#')
-                    }
-            except ValueError as e:
-                e.args += ('on line %d' % i)
-                raise
-        else:
-            result = {
-                e.smiles.data: e.data.data
-                for e in self.form.entry
-                }
-        min_len = self.form.entry.min_entries
-        max_len = self.form.entry.max_entries
-        if len(result) < min_len:
-            raise ValueError(
-                'not enough entries (%d); expected at least %d' %
-                (len(result), min_len))
-        if len(result) > max_len:
-            raise ValueError(
-                'too many entries (%d); maximum %d' %
-                (len(result), max_len))
-        return result
-
-    def __call__(self, **kwargs):
-        if not len(self.form.entry):
-            self.form.entry.append_entry()
-        # XXX Layout specific to UManSysProp
-        return tag.div(
-            tag.div(
-                tag.div(
-                    tag.label(
-                        tag.input(
-                            type='checkbox',
-                            value='file'
-                            ),
-                        ' upload file',
-                        ),
-                    class_='small-12 columns'
-                    ),
-                class_='row'
-                ),
-            tag.div(
-                tag.div(
-                    self.form.upload,
-                    class_='small-12 columns'
-                    ),
-                class_='row',
-                data_toggle='fieldset-upload'
-                ),
-            tag.div(
-                tag.div(
-                    self.form.entry[0].smiles.label(class_='inline'),
-                    class_='small-6 columns'
-                    ),
-                tag.div(
-                    self.form.entry[0].data.label(class_='inline'),
-                    class_='medium-4 small-3 columns'
-                    ),
-                tag.div(
-                    tag.a('Add', class_='button tiny right', data_toggle='fieldset-add-row'),
-                    class_='medium-2 small-3 columns clearfix'
-                    ),
-                class_='row',
-                data_toggle='fieldset-entry'
-                ),
-            (tag.div(
-                tag.div(
-                    entry.smiles,
-                    class_='small-6 columns'
-                    ),
-                tag.div(
-                    entry.data,
-                    class_='medium-4 small-3 columns'
-                    ),
-                tag.div(
-                    tag.a('Remove', class_='button tiny right', data_toggle='fieldset-remove-row'),
-                    class_='medium-2 small-3 columns clearfix'
-                    ),
-                class_='row',
-                data_toggle='fieldset-entry'
-                ) for entry in self.form.entry),
-            id=self.id,
-            data_toggle='fieldset',
-            data_freeid=len(self.form.entry)
-            )
-
-    @property
-    def scripts(self):
-        template = """\
-$('div#%(id)s').each(function() {
-    var $field = $(this);
-    var $check = $field.find(':checkbox');
-    var $add = $field.find('a[data-toggle=fieldset-add-row]');
-    var $remove = $field.find('a[data-toggle=fieldset-remove-row]');
-    var $upload = $field.find('div[data-toggle=fieldset-upload]');
-    var freeid = parseInt($field.data('freeid'));
-
-    $add.click(function() {
-        // Find the last row and clone it
-        var $oldrow = $field.find('div[data-toggle=fieldset-entry]:last');
-        var $row = $oldrow.clone(true);
-        // Re-write the ids of the input in the row
-        $row.find(':input').each(function() {
-            var newid = $(this).attr('id').replace(
-                /%(id)s-entry-(\d{1,4})/,
-                '%(id)s-entry-' + freeid);
-            $(this)
-                .attr('name', newid)
-                .attr('id', newid)
-                .val('')
-                .removeAttr('checked');
-        });
-        $oldrow.after($row);
-        freeid++;
-    });
-
-    $remove.click(function() {
-        if ($field.find('div[data-toggle=fieldset-entry]').length > 2) {
-            var thisRow = $(this).closest('div[data-toggle=fieldset-entry]');
-            thisRow.remove();
-        }
-    });
-
-    $check.change(function() {
-        // Refresh the entry matches
-        var $entry = $field.find('div[data-toggle=fieldset-entry]');
-
-        var $show = this.checked ? $upload : $entry;
-        var $hide = this.checked ? $entry : $upload;
-        $hide.fadeOut('fast', function() {
-            $hide
-                .find(':input')
-                    .prop('disabled', true);
-            $show
-                .find(':input')
-                    .prop('disabled', false)
-                .end()
-                    .fadeIn('fast');
-        });
-    });
-
-    if ($field.find(':file').val()) {
-        $check.prop('checked', true);
-        $field.find('div[data-toggle=fieldset-entry]')
-            .hide().find(':input').prop('disabled', true);
-    }
-    else {
-        $check.prop('checked', false);
-        $upload
-            .hide().find(':input').prop('disabled', true);
-    }
-});
-"""
-        return literal('\n'.join(
-            [tag.script(literal(template % {'id': self.id}))] +
-            [entry.smiles.scripts for entry in self.form.entry]
-            ))
-
-
 class SMILESListField(FormField):
     """
     Represents a compound input which defines a list of SMILES strings
@@ -573,6 +356,224 @@ $('div#%(id)s').each(function() {
         return literal('\n'.join(
             [tag.script(literal(template % {'id': self.id}))] +
             [field.scripts for field in self.form.entry]
+            ))
+
+
+class SMILESDictField(FormField):
+    """
+    Represents a compound input which defines a mapping of SMILES strings to
+    floating point values, or accepts a file upload containing one SMILES
+    string and one floating point value separated by whitespace, per line. The
+    field's data is returned as a mapping of OpenBabel Molecule objects to
+    float values.
+
+    Additional keyword arguments introduced by this class are:
+
+    :param entry_label:
+        Provides the label appearing above the SMILES text entry field
+
+    :param data_label:
+        Provides the label appearing above the floating point entry field
+
+    :param upload_label:
+        Provides the label appearing beside the file upload field
+
+    :param compounds:
+        If provided, a sequence of ``(value, label)`` tuples which can be
+        selected by drop-down from the text-entry field. Defaults to an empty
+        sequence.
+
+    :param min_entries:
+        The minimum number of entries permitted in the field. Defaults to 0.
+
+    :param max_entries:
+        The maximum number of entries permitted in the field. Defaults to 100.
+    """
+
+    def __init__(self, label=None, entry_label=None, data_label=None,
+            upload_label=None, validators=None, compounds=None, separator='-',
+            min_entries=0, max_entries=100, **kwargs):
+
+        class MapForm(SubForm):
+            smiles = SMILESField(entry_label, compounds=compounds)
+            data = FloatField(data_label, validators=[NumberRange(min=0.0)])
+
+        class ListForm(SubForm):
+            entry = FieldList(
+                FormField(MapForm),
+                min_entries=min_entries, max_entries=max_entries)
+            upload = FileField(upload_label)
+
+        super(SMILESDictField, self).__init__(
+                ListForm, label, separator=separator, **kwargs)
+
+    @property
+    def data(self):
+        if self.form.upload.name in request.files:
+            try:
+                # XXX Check each associated value is >=0
+                result = {
+                    smiles(key): float(value)
+                    for i, _line in enumerate(
+                        request.files[self.form.upload.name].read().splitlines(),
+                        start=1)
+                    for line in (_line.strip(),)
+                    for key, value in (line.split(None, 1),)
+                    if line and not line.startswith('#')
+                    }
+            except ValueError as e:
+                e.args += ('on line %d' % i)
+                raise
+        else:
+            result = {
+                e.smiles.data: e.data.data
+                for e in self.form.entry
+                }
+        min_len = self.form.entry.min_entries
+        max_len = self.form.entry.max_entries
+        if len(result) < min_len:
+            raise ValueError(
+                'not enough entries (%d); expected at least %d' %
+                (len(result), min_len))
+        if len(result) > max_len:
+            raise ValueError(
+                'too many entries (%d); maximum %d' %
+                (len(result), max_len))
+        return result
+
+    def __call__(self, **kwargs):
+        if not len(self.form.entry):
+            self.form.entry.append_entry()
+        # XXX Layout specific to UManSysProp
+        return tag.div(
+            tag.div(
+                tag.div(
+                    tag.label(
+                        tag.input(
+                            type='checkbox',
+                            value='file'
+                            ),
+                        ' upload file',
+                        ),
+                    class_='small-12 columns'
+                    ),
+                class_='row'
+                ),
+            tag.div(
+                tag.div(
+                    self.form.upload,
+                    class_='small-12 columns'
+                    ),
+                class_='row',
+                data_toggle='fieldset-upload'
+                ),
+            tag.div(
+                tag.div(
+                    self.form.entry[0].smiles.label(class_='inline'),
+                    class_='small-6 columns'
+                    ),
+                tag.div(
+                    self.form.entry[0].data.label(class_='inline'),
+                    class_='medium-4 small-3 columns'
+                    ),
+                tag.div(
+                    tag.a('Add', class_='button tiny right', data_toggle='fieldset-add-row'),
+                    class_='medium-2 small-3 columns clearfix'
+                    ),
+                class_='row',
+                data_toggle='fieldset-entry'
+                ),
+            (tag.div(
+                tag.div(
+                    entry.smiles,
+                    class_='small-6 columns'
+                    ),
+                tag.div(
+                    entry.data,
+                    class_='medium-4 small-3 columns'
+                    ),
+                tag.div(
+                    tag.a('Remove', class_='button tiny right', data_toggle='fieldset-remove-row'),
+                    class_='medium-2 small-3 columns clearfix'
+                    ),
+                class_='row',
+                data_toggle='fieldset-entry'
+                ) for entry in self.form.entry),
+            id=self.id,
+            data_toggle='fieldset',
+            data_freeid=len(self.form.entry)
+            )
+
+    @property
+    def scripts(self):
+        template = """\
+$('div#%(id)s').each(function() {
+    var $field = $(this);
+    var $check = $field.find(':checkbox');
+    var $add = $field.find('a[data-toggle=fieldset-add-row]');
+    var $remove = $field.find('a[data-toggle=fieldset-remove-row]');
+    var $upload = $field.find('div[data-toggle=fieldset-upload]');
+    var freeid = parseInt($field.data('freeid'));
+
+    $add.click(function() {
+        // Find the last row and clone it
+        var $oldrow = $field.find('div[data-toggle=fieldset-entry]:last');
+        var $row = $oldrow.clone(true);
+        // Re-write the ids of the input in the row
+        $row.find(':input').each(function() {
+            var newid = $(this).attr('id').replace(
+                /%(id)s-entry-(\d{1,4})/,
+                '%(id)s-entry-' + freeid);
+            $(this)
+                .attr('name', newid)
+                .attr('id', newid)
+                .val('')
+                .removeAttr('checked');
+        });
+        $oldrow.after($row);
+        freeid++;
+    });
+
+    $remove.click(function() {
+        if ($field.find('div[data-toggle=fieldset-entry]').length > 2) {
+            var thisRow = $(this).closest('div[data-toggle=fieldset-entry]');
+            thisRow.remove();
+        }
+    });
+
+    $check.change(function() {
+        // Refresh the entry matches
+        var $entry = $field.find('div[data-toggle=fieldset-entry]');
+
+        var $show = this.checked ? $upload : $entry;
+        var $hide = this.checked ? $entry : $upload;
+        $hide.fadeOut('fast', function() {
+            $hide
+                .find(':input')
+                    .prop('disabled', true);
+            $show
+                .find(':input')
+                    .prop('disabled', false)
+                .end()
+                    .fadeIn('fast');
+        });
+    });
+
+    if ($field.find(':file').val()) {
+        $check.prop('checked', true);
+        $field.find('div[data-toggle=fieldset-entry]')
+            .hide().find(':input').prop('disabled', true);
+    }
+    else {
+        $check.prop('checked', false);
+        $upload
+            .hide().find(':input').prop('disabled', true);
+    }
+});
+"""
+        return literal('\n'.join(
+            [tag.script(literal(template % {'id': self.id}))] +
+            [entry.smiles.scripts for entry in self.form.entry]
             ))
 
 
