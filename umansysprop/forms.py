@@ -32,6 +32,7 @@ except NameError:
 
 import math
 import decimal
+from collections import namedtuple
 
 import pybel
 from flask import request
@@ -738,6 +739,90 @@ $('div#%(id)s').each(function() {
             return list(frange(start, stop, step)) + [stop]
 
 
+class CoreAbundance(namedtuple('CoreAbundance', (
+    'amount',
+    'weight',
+    'dissociation',
+    ))):
+
+    @property
+    def concentration(self):
+        return (self.amount / self.weight) * self.dissociation
+
+
+class CoreAbundanceField(FormField):
+    """
+    Represents a complex input which defines an inert core abundance and its
+    molecular weight. If soluble is True (which it is by default), the extra
+    dissociation factor field is included in the interface. If it is False,
+    the field is excluded from the interface, and a fixed value of 1.0 is
+    returned in the namedtuple provided by the data property.
+    """
+
+    def __init__(self, label=None, validators=None, soluble=True, **kwargs):
+        validators = validators or []
+        self.soluble = soluble
+
+        class AbundanceForm(SubForm):
+            amount = FloatField(
+                'Amount (µg/m³)', default=0.0,
+                validators=[NumberRange(min=0.0)] + validators
+                )
+            weight = FloatField(
+                'Weight (g/mol)', default=320.0,
+                validators=[NumberRange(min=0.0)] + validators
+                )
+            dissociation = FloatField(
+                'Dissociation factor (unitless)', default=1.0,
+                validators=[NumberRange(min=0.0)] + validators
+                )
+
+        if not self.soluble:
+            del AbundanceForm.dissociation
+        super(CoreAbundanceField, self).__init__(
+            AbundanceForm, label, validators=None, **kwargs)
+
+    def __call__(self, **kwargs):
+        return tag.div(
+            tag.div(
+                tag.div(
+                    self.form.amount.label(class_='inline'),
+                    class_='medium-2 columns',
+                    ),
+                tag.div(
+                    self.form.amount(min=0.0),
+                    class_='medium-2 columns',
+                    ),
+                tag.div(
+                    self.form.weight.label(class_='inline'),
+                    class_='medium-2 columns',
+                    ),
+                tag.div(
+                    self.form.weight(min=0.0),
+                    class_='medium-2 columns',
+                    ),
+                tag.div(
+                    self.form.dissociation.label(class_='inline'),
+                    class_='medium-2 columns',
+                    ) if self.soluble else tag.div(class_='medium-4 columns'),
+                tag.div(
+                    self.form.dissociation(min=0.0),
+                    class_='medium-2 columns',
+                    ) if self.soluble else '',
+                class_='row'
+                ),
+            id=self.id
+            )
+
+    @property
+    def data(self):
+        return CoreAbundance(
+            amount=self.form.amount.data,
+            weight=self.form.weight.data,
+            dissociation=self.form.dissociation.data if self.soluble else 1.0,
+            )
+
+
 def convert_args(form, args):
     """
     Given a *form* and a dictionary of *args* which has been decoded from JSON,
@@ -745,14 +830,15 @@ def convert_args(form, args):
     field.
     """
     conversion = {
-        IntegerField:    int,
-        FloatField:      float,
-        DecimalField:    decimal.Decimal,
-        BooleanField:    bool,
-        SMILESField:     smiles,
-        SMILESListField: lambda l: [smiles(s) for s in l],
-        SMILESDictField: lambda l: {smiles(s): float(v) for (s, v) in l.items()},
-        FloatRangeField: lambda l: [float(f) for f in l],
+        IntegerField:       int,
+        FloatField:         float,
+        DecimalField:       decimal.Decimal,
+        BooleanField:       bool,
+        SMILESField:        smiles,
+        SMILESListField:    lambda l: [smiles(s) for s in l],
+        SMILESDictField:    lambda l: {smiles(s): float(v) for (s, v) in l.items()},
+        FloatRangeField:    lambda l: [float(f) for f in l],
+        CoreAbundanceField: lambda l: CoreAbundance(*l),
         }
     return {
         field.name: conversion.get(field.__class__, lambda x: x)(args[field.name])
