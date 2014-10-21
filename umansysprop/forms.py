@@ -32,6 +32,7 @@ except NameError:
 
 import math
 import decimal
+import itertools
 from collections import namedtuple
 
 import pybel
