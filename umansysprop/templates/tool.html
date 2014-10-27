@@ -26,16 +26,21 @@
   {% block form %}
   {{ form.hidden_tag() }}
   {% for field in form %}
+  {% if field.name != 'output_format' %}
   <div class="row">
     <div class="small-12 columns">
       {{ render_field(field) }}
     </div>
   </div>
+  {% endif %}
   {% endfor %}
   {% endblock %}
   <div class="row">
-    <div class="small-12 columns">
-      <input class="button small" type="submit" name="submit" value="Calculate" />
+    <div class="medium-6 columns">
+      {{ render_field(form.output_format) }}
+    </div>
+    <div class="medium-6 columns medium-text-right">
+      <input style="margin-top: 8px" class="button small radius" type="submit" name="submit" value="Calculate" />
     </div>
   </div>
 </form>

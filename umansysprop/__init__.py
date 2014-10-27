@@ -43,7 +43,7 @@ __requires__ = [
     ]
 
 __extra_requires__ = {
-    'server': ['openbabel', 'flask', 'flask-wtf', 'wtforms', 'docutils'],
+    'server': ['openbabel', 'flask', 'flask-wtf', 'wtforms', 'docutils', 'xlsxwriter'],
     'client': [],
     'doc':    ['sphinx'],
     }

@@ -37,7 +37,7 @@ from collections import namedtuple
 
 import pybel
 from flask import request
-from flask.ext.wtf import Form as BaseForm
+from flask.ext.wtf import Form as DeclarativeForm
 from wtforms.fields import (
     Field,
     BooleanField,
@@ -87,10 +87,19 @@ from wtforms.widgets.html5 import NumberInput
 from .html import html, literal, content, tag
 
 
-Form = BaseForm
+class Form(DeclarativeForm):
+    output_format = SelectField(
+        'Output format', choices=[
+            ('html', 'HTML (view in web browser)'),
+            ('xml',  'XML file'),
+            ('json', 'JSON file'),
+            ('csv',  'CSV files (in .zip archive)'),
+            ('xls',  'Excel spreadsheet'),
+            ('ods',  'OpenDocument spreadsheet'),
+            ])
 
 
-class SubForm(BaseForm):
+class SubForm(DeclarativeForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(SubForm, self).__init__(*args, csrf_enabled=False, **kwargs)
 
@@ -258,7 +267,7 @@ class SMILESListField(FormField):
                     class_='medium-10 small-9 columns'
                     ),
                 tag.div(
-                    tag.a('Add', class_='button tiny right', data_toggle='fieldset-add-row'),
+                    tag.a('Add', class_='button radius tiny right', data_toggle='fieldset-add-row'),
                     class_='medium-2 small-3 columns clearfix'
                     ),
                 class_='row'
@@ -277,7 +286,7 @@ class SMILESListField(FormField):
                     class_='medium-10 small-9 columns'
                     ),
                 tag.div(
-                    tag.a('Remove', class_='button tiny right', data_toggle='fieldset-remove-row'),
+                    tag.a('Remove', class_='button radius tiny right', data_toggle='fieldset-remove-row'),
                     class_='medium-2 small-3 columns clearfix'
                     ),
                 class_='row',
@@ -479,7 +488,7 @@ class SMILESDictField(FormField):
                     class_='medium-4 small-3 columns'
                     ),
                 tag.div(
-                    tag.a('Add', class_='button tiny right', data_toggle='fieldset-add-row'),
+                    tag.a('Add', class_='button radius tiny right', data_toggle='fieldset-add-row'),
                     class_='medium-2 small-3 columns clearfix'
                     ),
                 class_='row',
@@ -495,7 +504,7 @@ class SMILESDictField(FormField):
                     class_='medium-4 small-3 columns'
                     ),
                 tag.div(
-                    tag.a('Remove', class_='button tiny right', data_toggle='fieldset-remove-row'),
+                    tag.a('Remove', class_='button radius tiny right', data_toggle='fieldset-remove-row'),
                     class_='medium-2 small-3 columns clearfix'
                     ),
                 class_='row',
