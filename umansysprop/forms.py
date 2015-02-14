@@ -85,18 +85,12 @@ from wtforms.widgets import TextInput
 from wtforms.widgets.html5 import NumberInput
 
 from .html import html, literal, content, tag
+from . import renderers
 
 
 class Form(DeclarativeForm):
     output_format = SelectField(
-        'Output format', choices=[
-            ('html', 'HTML (view in web browser)'),
-            ('xml',  'XML file'),
-            ('json', 'JSON file'),
-            ('csv',  'CSV files (in .zip archive)'),
-            ('xls',  'Excel spreadsheet'),
-            ('ods',  'OpenDocument spreadsheet'),
-            ])
+        'Output format', choices=renderers.registered(), default='text/html')
 
 
 class SubForm(DeclarativeForm):

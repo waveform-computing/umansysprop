@@ -34,7 +34,7 @@ import pkgutil
 import json
 from textwrap import dedent
 
-from flask import Flask, request, url_for, render_template, make_response, jsonify
+from flask import Flask, request, url_for, render_template, make_response, send_file, jsonify
 from docutils import core
 
 from . import tools
@@ -115,7 +115,7 @@ def call(name):
     args = json.loads(request.get_data(cache=False, as_text=True))
     args = forms.convert_args(mod.HandlerForm(formdata=None), args)
     result = mod.handler(**args)
-    result = renderers.render_json(result)
+    headers, result = renderers.render('application/json', result)
     response = make_response(result)
     response.mimetype = 'application/json'
     return response
@@ -128,14 +128,10 @@ def tool(name):
     mod = tools[name]
     form = mod.HandlerForm(request.form)
     if form.validate_on_submit():
-        renderer_by_type = {
-            'application/json': renderers.render_json,
-            'application/xml':  renderers.render_xml,
-            'text/html':        renderers.render_html,
-            }
-        mimetype = request.accept_mimetypes.best_match(renderer_by_type.keys())
-        result = mod.handler(**form.data)
-        result = renderer_by_type[mimetype](result)
+        args = form.data
+        mimetype = args.pop('output_format')
+        result = mod.handler(**args)
+        headers, result = renderers.render(mimetype, result)
         # If we're generating HTML, wrap the result in a template
         if mimetype == 'text/html':
             result = render_template(
@@ -144,6 +140,7 @@ def tool(name):
                 result=result)
         response = make_response(result)
         response.mimetype = mimetype
+        response.headers.extend(headers)
         return response
     return render_template(
         '%s.html' % name,
