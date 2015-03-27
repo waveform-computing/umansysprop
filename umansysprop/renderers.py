@@ -37,6 +37,7 @@ import pickle
 import tempfile
 
 import xlsxwriter as xl
+import pybel
 from flask import json
 
 from .zip import ZipFile, ZIP_DEFLATED
@@ -70,6 +71,15 @@ def render(mimetype, obj, **kwargs):
         return headers, func(obj, **kwargs)
 
 
+def _format_key(value):
+    # This rather hacky routine is here to deal with the crappy string
+    # conversion from OpenBabel's Molecule class (although this is also
+    # necessary for things like pickle which can't deal with SWIG objects)
+    if isinstance(value, pybel.Molecule):
+        return str(value).strip()
+    else:
+        return value
+
 @register('application/json', 'JSON file')
 def render_json(results, **kwargs):
 
@@ -79,7 +89,7 @@ def render_json(results, **kwargs):
             'title': table.title,
             'data': [
                 {
-                    'key': (row_key, col_key),
+                    'key': (_format_key(row_key), _format_key(col_key)),
                     'value': table.data[(row_key, col_key)],
                     }
                 for row_key in table.rows
@@ -92,12 +102,12 @@ def render_json(results, **kwargs):
 
 @register('application/octet-stream', 'Python pickle')
 def render_pickle(results, **kwargs):
+    # XXX Doesn't work with Molecule objects
     for table in results:
         # Force evaluation of the data and wipe the function reference (it's
         # no longer needed and typically prevents serialization by being a
         # lambda of some sorts)
         table.data
-        table._func = None
     return pickle.dumps(results, protocol=0)
 
 
@@ -127,7 +137,7 @@ def render_xml(results, **kwargs):
     return tag.tables(render_table(table) for table in results)
 
 
-@register('application/csv', 'CSV file', headers={
+@register('application/zip', 'Zipped CSV files', headers={
         'Content-Disposition': 'attachment; filename=umansysprop.zip',
         })
 def render_csv(results, **kwargs):
@@ -142,11 +152,11 @@ def render_csv(results, **kwargs):
         for dim in range(table.col_dims):
             writer.writerow(
                 [''] * table.row_dims +
-                [col_key[dim] for col_key in table.cols_iter]
+                [_format_key(col_key[dim]) for col_key in table.cols_iter]
                 )
-        for data_row, row_key in zip(table.rows, table.rows_iter):
+        for data_row, row_keys in zip(table.rows, table.rows_iter):
             writer.writerow(
-                list(row_key) +
+                [_format_key(row_key) for row_key in row_keys] +
                 [table.data[(data_row, data_col)] for data_col in table.cols]
                 )
         stream.seek(0)
@@ -169,8 +179,7 @@ def render_xlsx(results, **kwargs):
     bold = workbook.add_format({'bold': True})
 
     def render_table(table):
-        worksheet = workbook.add_worksheet(table.title)
-        worksheet.title = table.title
+        worksheet = workbook.add_worksheet(table.title[:31])
         # Write column and row titles
         worksheet.merge_range(
             0, table.row_dims, 0, table.row_dims + len(table.cols) - 1,
@@ -186,9 +195,11 @@ def render_xlsx(results, **kwargs):
                     worksheet.merge_range(
                         col_dim + 1, col_ix,
                         col_dim + 1, col_ix + span[col_dim] - 1,
-                        col_key[col_dim])
+                        _format_key(col_key[col_dim]))
                 elif span[col_dim] == 1:
-                    worksheet.write(col_dim + 1, col_ix, col_key[col_dim])
+                    worksheet.write(
+                        col_dim + 1, col_ix,
+                        _format_key(col_key[col_dim]))
         # Write row keys
         for row_ix, row_key in enumerate(table.rows_iter, start=table.col_dims + 1):
             span = table.row_spans[row_key]
@@ -197,9 +208,11 @@ def render_xlsx(results, **kwargs):
                     worksheet.merge_range(
                         row_ix, row_dim,
                         row_ix + span[row_dim] - 1, row_dim,
-                        row_key[row_dim])
+                        _format_key(row_key[row_dim]))
                 elif span[row_dim] == 1:
-                    worksheet.write(row_ix, row_dim, row_key[row_dim])
+                    worksheet.write(
+                        row_ix, row_dim,
+                        _format_key(row_key[row_dim]))
         # Write data
         for row_ix, row_key in enumerate(table.rows, start=table.col_dims + 1):
             for col_ix, col_key in enumerate(table.cols, start=table.row_dims):
@@ -229,7 +242,7 @@ def render_html(obj, **kwargs):
                         if col_dim < table.col_dims - 1 else
                         (tag.th(row_title) for row_title in table.row_titles),
                         (
-                            tag.th(key[col_dim], colspan=span if span > 1 else None)
+                            tag.th(_format_key(key[col_dim]), colspan=span if span > 1 else None)
                             for key in table.cols_iter
                             for span in (table.col_spans[key][col_dim],)
                             if span > 0
@@ -241,7 +254,7 @@ def render_html(obj, **kwargs):
             tag.tbody(
                 tag.tr(
                     (
-                        tag.th(row_key[row_dim], rowspan=span if span > 1 else None)
+                        tag.th(_format_key(row_key[row_dim]), rowspan=span if span > 1 else None)
                         for row_dim in range(table.row_dims)
                         for span in (table.row_spans[row_key][row_dim],)
                         if span > 0

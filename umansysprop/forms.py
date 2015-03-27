@@ -52,7 +52,6 @@ from wtforms.fields import (
     FileField,
     FormField,
     SubmitField,
-    FormField,
     FieldList,
     )
 from wtforms.fields.html5 import (
@@ -415,17 +414,17 @@ class SMILESDictField(FormField):
     @property
     def data(self):
         if self.form.upload.name in request.files:
+            result = {}
             try:
                 # XXX Check each associated value is >=0
-                result = {
-                    smiles(key): float(value)
-                    for i, _line in enumerate(
+                for i, line in enumerate(
                         request.files[self.form.upload.name].read().splitlines(),
-                        start=1)
-                    for line in (_line.strip(),)
-                    for key, value in (line.split(None, 1),)
-                    if line and not line.startswith('#')
-                    }
+                        start=1):
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        key, value = line.split(None, 1)
+                        result[smiles(key)] = float(value)
+                return result
             except ValueError as e:
                 e.args += ('on line %d' % i)
                 raise

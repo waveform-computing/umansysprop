@@ -114,7 +114,9 @@ class Table(object):
         this class will produce a human readable string representation of the
         table's row and column keys along with the calculated data.
     """
-    def __init__(self, name, rows, cols, func, title='', rows_title=None, cols_title=None):
+    def __init__(self, name, rows, cols, func=None, data=None, title='', rows_title=None, cols_title=None):
+        if func is None and data is None:
+            raise ValueError('Either func or data must be specified')
         self._rows = tuple(rows)
         self._cols = tuple(cols)
         if not self._rows:
@@ -150,7 +152,7 @@ class Table(object):
         self._row_spans = self._calculate_spans(tuple(self.rows_iter))
         self._col_spans = self._calculate_spans(tuple(self.cols_iter))
         self._func = func
-        self._data = None
+        self._data = data
         self.name = name
         self.title = title
 
@@ -320,6 +322,7 @@ class Table(object):
                 for row in self.rows
                 for col in self.cols
                 }
+            self._func = None
         return self._data
 
     @property
