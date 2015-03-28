@@ -6,7 +6,7 @@
 #
 # umansysprop is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
+# Foundation, either version 2 of the License, or (at your option) any later
 # version.
 #
 # umansysprop is distributed in the hope that it will be useful, but WITHOUT
@@ -60,7 +60,7 @@ __classifiers__ = [
     'Development Status :: 4 - Beta',
     'Environment :: Web Environment',
     'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+    'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
     'Operating System :: POSIX',
     'Operating System :: Unix',
     'Programming Language :: Python :: 2.7',
