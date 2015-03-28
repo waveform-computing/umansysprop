@@ -97,7 +97,7 @@ def api():
                 'doc': (mod.handler.__doc__ or '').strip(),
                 'params': [
                     field.name for field in mod.HandlerForm()
-                    if field.name != 'csrf_token'
+                    if field.name not in ('csrf_token', 'output_format')
                     ],
                 }
             for mod_name, mod in tools.items()

@@ -26,6 +26,8 @@ from __future__ import (
 str = type('')
 
 
+import sys
+import json
 import itertools
 
 
@@ -46,6 +48,47 @@ class Result(list):
     """
     def __init__(self, *tables):
         super(Result, self).__init__(tables)
+
+    @classmethod
+    def from_json(cls, obj):
+        """
+        This class constructor accepts a parsed JSON object (created by
+        :func:`umansysprop.renderers.render_json`, or with the same structure
+        produced by that function) and constructs the Result from this
+        structure.
+        """
+        tables = []
+        for table_dict in obj:
+            name = table_dict['name']
+            title = table_dict['title']
+            if isinstance(table_dict['rows_title'], list):
+                rows_title = tuple(table_dict['rows_title'])
+            else:
+                rows_title = table_dict['rows_title']
+            if isinstance(table_dict['cols_title'], list):
+                cols_title = tuple(table_dict['cols_title'])
+            else:
+                cols_title = table_dict['cols_title']
+            data = {}
+            rows = []
+            cols = []
+            for datum in table_dict['data']:
+                key = datum['key']
+                value = datum['value']
+                row_key, col_key = key
+                if isinstance(row_key, list):
+                    row_key = tuple(row_key)
+                if isinstance(col_key, list):
+                    col_key = tuple(col_key)
+                if row_key not in rows:
+                    rows.append(row_key)
+                if col_key not in cols:
+                    cols.append(col_key)
+                data[(row_key, col_key)] = value
+            tables.append(Table(
+                name, rows, cols, data=data,
+                title=title, rows_title=rows_title, cols_title=cols_title))
+        return cls(*tables)
 
     def __getattr__(self, name):
         for table in self:
@@ -102,10 +145,11 @@ class Table(object):
     |    | B2 | data | data | data |
     +----+----+------+------+------+
 
-    Optional attributes also exist for :attr:`title`, :attr:`rows_title`, and
-    :attr:`cols_title` (these all default to an empty string if omitted). In
-    the case that tuples are used for row or column keys, the corresponding
-    title values must be tuples as well.
+    Optional attributes also exist for :attr:`title`, :attr:`rows_title`,
+    :attr:`cols_title`, :attr:`rows_unit`, and :attr:`cols_unit` (these all
+    default to an empty string if omitted). In the case that tuples are used
+    for row or column keys, the corresponding title and unit values must be
+    tuples as well.
 
     .. note::
 
@@ -114,7 +158,10 @@ class Table(object):
         this class will produce a human readable string representation of the
         table's row and column keys along with the calculated data.
     """
-    def __init__(self, name, rows, cols, func=None, data=None, title='', rows_title=None, cols_title=None):
+    def __init__(
+            self, name, rows, cols, func=None, data=None,
+            title='', rows_title=None, cols_title=None,
+            rows_unit=None, cols_unit=None):
         if func is None and data is None:
             raise ValueError('Either func or data must be specified')
         self._rows = tuple(rows)
@@ -125,42 +172,33 @@ class Table(object):
             raise ValueError('Table must have at least one column key')
         self._row_dims = len(self.rows[0]) if isinstance(self.rows[0], tuple) else 1
         self._col_dims = len(self.cols[0]) if isinstance(self.cols[0], tuple) else 1
-        if rows_title is None:
-            if self.row_dims == 1:
-                rows_title = ''
-            else:
-                rows_title = ('',) * self.row_dims
-        if cols_title is None:
-            if self.col_dims == 1:
-                cols_title = ''
-            else:
-                cols_title = ('',) * self.col_dims
-        if self.row_dims > 1 and not isinstance(rows_title, tuple):
-            raise ValueError(
-                'When rows are tuples, rows_title must be a tuple as well')
-        if self.col_dims > 1 and not isinstance(cols_title, tuple):
-            raise ValueError(
-                'When cols are tuples, cols_title must be a tuple as well')
-        if self.row_dims > 1 and len(rows_title) != self.row_dims:
-            raise ValueError(
-                'rows_title tuple does not contain %d elements' % self.row_dims)
-        if self.col_dims > 1 and len(cols_title) != self.col_dims:
-            raise ValueError(
-                'cols_title tuple does not contain %d elements' % self.col_dims)
-        self.rows_title = rows_title
-        self.cols_title = cols_title
-        self._row_spans = self._calculate_spans(tuple(self.rows_iter))
-        self._col_spans = self._calculate_spans(tuple(self.cols_iter))
+        self.rows_title = self._keys_default(rows_title, self.row_dims)
+        self.rows_unit = self._keys_default(rows_unit, self.row_dims)
+        self.cols_title = self._keys_default(cols_title, self.col_dims)
+        self.cols_unit = self._keys_default(cols_unit, self.col_dims)
+        self._row_spans = self._calculate_spans(tuple(self.rows_iter), self.row_dims)
+        self._col_spans = self._calculate_spans(tuple(self.cols_iter), self.col_dims)
         self._func = func
         self._data = data
         self.name = name
         self.title = title
 
-    def _calculate_spans(self, keys):
+    def _keys_default(self, value, dims):
+        if value is None:
+            if dims == 1:
+                value = ''
+            value = ('',) * dims
+        if dims > 1:
+            if not isinstance(value, tuple):
+                raise ValueError('%r is not a tuple' % value)
+            if len(value) != dims:
+                raise ValueError('%r does not contain %dims elements' % (value, dims))
+        return value
+
+    def _calculate_spans(self, keys, dims):
         if not keys:
             raise ValueError('keys cannot be empty')
-        if isinstance(keys[0], tuple):
-            dims = len(keys[0])
+        if dims > 1:
             spans = []
             for dim in range(dims):
                 dim_spans = []
@@ -227,6 +265,17 @@ class Table(object):
             return self.rows_title
         else:
             return (self.rows_title,)
+
+    @property
+    def row_units(self):
+        """
+        Returns :attr:`rows_unit` as a tuple, regardless. This property is
+        intended to make renderers simpler.
+        """
+        if self.row_dims > 1:
+            return self.rows_unit
+        else:
+            return (self.rows_unit,)
 
     @property
     def row_spans(self):
@@ -300,6 +349,17 @@ class Table(object):
             return (self.cols_title,)
 
     @property
+    def col_units(self):
+        """
+        Returns :attr:`cols_unit` as a tuple, regardless. This property is
+        intended to make renderers simpler.
+        """
+        if self.col_dims > 1:
+            return self.cols_unit
+        else:
+            return (self.cols_unit,)
+
+    @property
     def col_spans(self):
         """
         A mapping of col keys (as tuples, as from :attr:`cols_iter`) to a tuple
@@ -337,6 +397,8 @@ class Table(object):
         .. warning::
 
             Accessing this property will implicitly import the numpy module.
+            This is not done during module import to avoid creating an
+            explicit dependency on numpy.
 
         .. _numpy: http://www.numpy.org/
         """
@@ -357,6 +419,8 @@ class Table(object):
         .. warning::
 
             Accessing this property will implicitly import the pandas module.
+            This is not done during module import to avoid creating an
+            explicit dependency on pandas.
 
         .. _pandas: http://pandas.pydata.org/
         """
@@ -458,5 +522,7 @@ class Table(object):
                         )
                     )
             result += '\n'
+        if sys.version_info.major < 3:
+            return result.encode('utf-8')
         return result
 

@@ -40,6 +40,8 @@ except ImportError:
 
 import requests
 
+from . import results
+
 
 class UManSysProp(object):
 
@@ -79,30 +81,5 @@ def {name}(self, {params}):
                     'Content-Type': 'application/json',
                     })
         response.raise_for_status()
-        result = response.json()
-        # Perform data-type conversions
-        tables = result.pop('tables')
-        conversions = {
-            'int':   int,
-            'float': float,
-            'str':   lambda x: x,
-            }
-        row_conversions = {
-            table: conversions[tables[table]['rows'][1]]
-            for table in tables
-            }
-        col_conversions = {
-            table: conversions[tables[table]['cols'][1]]
-            for table in tables
-            }
-        return {
-            table: {
-                col_conversions[table](col_key): {
-                    row_conversions[table](row_key): value
-                    for row_key, value in rows.items()
-                    }
-                for col_key, rows in cols.items()
-                }
-            for table, cols in result.items()
-            }
+        return results.Result.from_json(response.json())
 

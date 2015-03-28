@@ -73,12 +73,14 @@ def render(mimetype, obj, **kwargs):
 
 def _format_key(value):
     # This rather hacky routine is here to deal with the crappy string
-    # conversion from OpenBabel's Molecule class (although this is also
-    # necessary for things like pickle which can't deal with SWIG objects)
-    if isinstance(value, pybel.Molecule):
+    # conversion from OpenBabel's Molecule class
+    if isinstance(value, tuple):
+        return tuple(_format_key(key) for key in value)
+    elif isinstance(value, pybel.Molecule):
         return str(value).strip()
     else:
         return value
+
 
 @register('application/json', 'JSON file')
 def render_json(results, **kwargs):
@@ -87,6 +89,8 @@ def render_json(results, **kwargs):
         return {
             'name': table.name,
             'title': table.title,
+            'rows_title': table.rows_title,
+            'cols_title': table.cols_title,
             'data': [
                 {
                     'key': (_format_key(row_key), _format_key(col_key)),
@@ -102,7 +106,6 @@ def render_json(results, **kwargs):
 
 @register('application/octet-stream', 'Python pickle')
 def render_pickle(results, **kwargs):
-    # XXX Doesn't work with Molecule objects
     for table in results:
         # Force evaluation of the data and wipe the function reference (it's
         # no longer needed and typically prevents serialization by being a

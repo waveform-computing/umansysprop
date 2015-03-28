@@ -28,6 +28,10 @@ try:
     range = xrange
 except NameError:
     pass
+try:
+    import copy_reg as copyreg
+except ImportError:
+    import copyreg
 
 
 import math
@@ -95,6 +99,13 @@ class Form(DeclarativeForm):
 class SubForm(DeclarativeForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(SubForm, self).__init__(*args, csrf_enabled=False, **kwargs)
+
+
+def unpickle_molecule(s):
+    return pybel.readstring(b'smi', s)
+def pickle_molecule(m):
+    return unpickle_molecule, (str(m).strip().encode('ascii'),)
+copyreg.pickle(pybel.Molecule, pickle_molecule)
 
 
 def smiles(s):
