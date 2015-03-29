@@ -9,7 +9,7 @@ organic molecules and ensemble mixtures. Built using open source chemical
 informatics, the facilities provided are divided according to broad
 applications.
 
-The code is licensed under the `GPL v3`_ or above. Packages can be
+The code is licensed under the `GPL v2`_ or above. Packages can be
 `downloaded`_ from PyPI. The `source code`_ can be obtained from GitHub, which
 also hosts the `bug tracker`_. The `documentation`_ (which includes
 installation and quick start examples) can be read on ReadTheDocs.
@@ -18,4 +18,4 @@ installation and quick start examples) can be read on ReadTheDocs.
 .. _documentation: http://umansysprop.readthedocs.org/
 .. _source code: https://github.com/waveform80/umansysprop
 .. _bug tracker: https://github.com/waveform80/umansysprop/issues
-.. _GPL v3: https://www.gnu.org/licenses/gpl-3.0.html
+.. _GPL v2: https://www.gnu.org/licenses/gpl-2.0.html
