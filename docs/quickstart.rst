@@ -57,9 +57,7 @@ Calling any of the tools will (in the event of success) return a
 sequence of :class:`Table` instances. Each table has a name and this can be
 used to access the table in the owning :class:`Result` list. For example::
 
-    >>> result = client.vapour_pressure(['CCCC', 'C(CC(=O)O)C(=O)O',
-        'C(=O)(C(=O)O)O', 'CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O'], [298.15,
-        299.15, 300.15, 310.15], 'nannoolal', 'nannoolal')
+    >>> result = client.vapour_pressure(['CCCC', 'C(CC(=O)O)C(=O)O', 'C(=O)(C(=O)O)O', 'CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O'], [298.15, 299.15, 300.15, 310.15], 'nannoolal', 'nannoolal')
     >>> result
     [<Table name="pressures">]
     >>> result.pressures
