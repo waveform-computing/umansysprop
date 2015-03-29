@@ -18,8 +18,18 @@
 # umansysprop.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Client library for the UManSysProp server; an online framework for calculating
-the properties of individual organic molecules and ensemble mixtures
+=============================
+``umansysprop.client`` Module
+=============================
+
+This module contains the client library for interacting with the UManSysProp
+server. Only one user-accessible class is defined in the module:
+
+UManSysProp
+===========
+
+.. autoclass:: UManSysProp
+
 """
 
 from __future__ import (

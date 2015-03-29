@@ -17,6 +17,27 @@
 # You should have received a copy of the GNU General Public License along with
 # umansysprop.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+==============================
+``umansysprop.results`` Module
+==============================
+
+This module defines the classes used to encapsulate results returned by the
+UManSysProp server. Each tool method on the client will return an instance of
+the :class:`Result` class which in turn contains one or more :class:`Table`
+instances.
+
+Result
+======
+
+.. autoclass:: Result
+
+Table
+=====
+
+.. autoclass:: Table
+"""
+
 from __future__ import (
     unicode_literals,
     absolute_import,
