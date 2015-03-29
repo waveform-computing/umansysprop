@@ -90,6 +90,25 @@ def {name}(self, {params}):
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     })
-        response.raise_for_status()
+        if 400 <= response.status_code < 500:
+            # Some kind of client error; try and decode the body as JSON to
+            # determine the details and raise a reasonable exception
+            exc_type = response.json()['exc_type']
+            exc_value = response.json()['exc_value']
+            # Only permit a specific set of exceptions
+            exc_class = {
+                'ValueError':   ValueError,
+                'NameError':    NameError,
+                'KeyError':     KeyError,
+                }[exc_type]
+            if isinstance(exc_value, str):
+                raise exc_class(exc_value)
+            else:
+                raise exc_class(*exc_value)
+        elif response.status_code >= 500:
+            import pdb; pdb.set_trace()
+            raise RuntimeError('Server error: %s' % response.body)
+        else:
+            response.raise_for_status()
         return results.Result.from_json(response.json())
 

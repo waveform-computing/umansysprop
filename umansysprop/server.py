@@ -34,8 +34,17 @@ import pkgutil
 import json
 from textwrap import dedent
 
-from flask import Flask, request, url_for, render_template, make_response, send_file, jsonify
-from docutils import core
+from flask import (
+    Flask,
+    request,
+    url_for,
+    render_template,
+    make_response,
+    send_file,
+    jsonify,
+    abort,
+    )
+import docutils.core
 
 from . import tools
 from . import renderers
@@ -64,18 +73,6 @@ def index():
         )
 
 
-def render_docs(docstring):
-    if not isinstance(docstring, str):
-        docstring = docstring.decode('utf-8')
-    docstring = dedent(docstring)
-    result = core.publish_parts(
-            docstring, writer_name='html', settings_overrides={
-                'input_encoding': 'unicode',
-                'output_encoding': 'unicode',
-                })
-    return result['fragment']
-
-
 @app.route('/api')
 def api():
     mimetype = request.accept_mimetypes.best_match([
@@ -87,7 +84,6 @@ def api():
             'api.html',
             title='JSON API Documentation',
             tools=tools,
-            render_docs=render_docs,
             )
     elif mimetype == 'application/json':
         return jsonify(**{
@@ -103,18 +99,53 @@ def api():
             for mod_name, mod in tools.items()
             })
     else:
-        return 'Not acceptable', 406
+        abort(406)
+
+
+@app.route('/api/<name>', methods=['GET'])
+def api_docs(name):
+
+    def render_docs(docstring):
+        if not isinstance(docstring, str):
+            docstring = docstring.decode('utf-8')
+        docstring = dedent(docstring)
+        result = docutils.core.publish_parts(
+                docstring, writer_name='html', settings_overrides={
+                    'input_encoding': 'unicode',
+                    'output_encoding': 'unicode',
+                    })
+        return result['fragment']
+
+    try:
+        return render_template(
+            'api_docs.html',
+            title=name,
+            name=name,
+            tool=tools[name],
+            render_docs=render_docs,
+            )
+    except KeyError:
+        abort(404)
 
 
 @app.route('/api/<name>', methods=['POST'])
 def call(name):
     # Fail if the RPC call has more than a meg of data
     if request.content_length > 1048576:
-        return 'Excessively long request', 413
-    mod = tools[name]
-    args = json.loads(request.get_data(cache=False, as_text=True))
-    args = forms.convert_args(mod.HandlerForm(formdata=None), args)
-    result = mod.handler(**args)
+        return jsonify(exc_type='ValueError', exc_value='Request too large'), 413
+    try:
+        mod = tools[name]
+    except KeyError:
+        return jsonify(exc_type='NameError', exc_value='Unknown method'), 404
+    try:
+        args = json.loads(request.get_data(cache=False, as_text=True))
+        args = forms.convert_args(mod.HandlerForm(formdata=None), args)
+    except ValueError as e:
+        return jsonify(exc_type='ValueError', exc_value='Badly formed parameters: %s' % str(e)), 400
+    try:
+        result = mod.handler(**args)
+    except (ValueError, KeyError) as e:
+        return jsonify(exc_type=e.__class__.__name__, exc_value=str(e)), 400
     headers, result = renderers.render('application/json', result)
     response = make_response(result)
     response.mimetype = 'application/json'
@@ -125,7 +156,10 @@ def call(name):
 def tool(name):
     # Present the tool's input form, or execute the tool's handler callable
     # based on whether the HTTP request is a GET or a POST
-    mod = tools[name]
+    try:
+        mod = tools[name]
+    except KeyError:
+        abort(404)
     form = mod.HandlerForm(request.form)
     if form.validate_on_submit():
         args = form.data
@@ -142,8 +176,6 @@ def tool(name):
         response.mimetype = mimetype
         response.headers.extend(headers)
         return response
-    else:
-        print(form.errors)
     return render_template(
         '%s.html' % name,
         title=mod.__doc__,
