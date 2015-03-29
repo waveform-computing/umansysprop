@@ -57,37 +57,36 @@ class Result(list):
         produced by that function) and constructs the Result from this
         structure.
         """
+        def to_tuple(v):
+            if isinstance(v, list):
+                return tuple(v)
+            else:
+                return v
+
         tables = []
         for table_dict in obj:
             name = table_dict['name']
             title = table_dict['title']
-            if isinstance(table_dict['rows_title'], list):
-                rows_title = tuple(table_dict['rows_title'])
-            else:
-                rows_title = table_dict['rows_title']
-            if isinstance(table_dict['cols_title'], list):
-                cols_title = tuple(table_dict['cols_title'])
-            else:
-                cols_title = table_dict['cols_title']
-            data = {}
+            rows_title = to_tuple(table_dict['rows_title'])
+            rows_unit = to_tuple(table_dict['rows_unit'])
+            cols_title = to_tuple(table_dict['cols_title'])
+            cols_unit = to_tuple(table_dict['cols_unit'])
             rows = []
             cols = []
+            data = {}
             for datum in table_dict['data']:
                 key = datum['key']
                 value = datum['value']
-                row_key, col_key = key
-                if isinstance(row_key, list):
-                    row_key = tuple(row_key)
-                if isinstance(col_key, list):
-                    col_key = tuple(col_key)
+                row_key, col_key = (to_tuple(v) for v in key)
                 if row_key not in rows:
                     rows.append(row_key)
                 if col_key not in cols:
                     cols.append(col_key)
                 data[(row_key, col_key)] = value
             tables.append(Table(
-                name, rows, cols, data=data,
-                title=title, rows_title=rows_title, cols_title=cols_title))
+                name, rows, cols, data=data, title=title,
+                rows_title=rows_title, rows_unit=rows_unit,
+                cols_title=cols_title, cols_unit=cols_unit))
         return cls(*tables)
 
     def __getattr__(self, name):
@@ -159,9 +158,8 @@ class Table(object):
         table's row and column keys along with the calculated data.
     """
     def __init__(
-            self, name, rows, cols, func=None, data=None,
-            title='', rows_title=None, cols_title=None,
-            rows_unit=None, cols_unit=None):
+            self, name, rows, cols, func=None, data=None, title='',
+            rows_title=None, cols_title=None, rows_unit=None, cols_unit=None):
         if func is None and data is None:
             raise ValueError('Either func or data must be specified')
         self._rows = tuple(rows)
@@ -187,7 +185,8 @@ class Table(object):
         if value is None:
             if dims == 1:
                 value = ''
-            value = ('',) * dims
+            else:
+                value = ('',) * dims
         if dims > 1:
             if not isinstance(value, tuple):
                 raise ValueError('%r is not a tuple' % value)
@@ -219,7 +218,7 @@ class Table(object):
                 spans.append(dim_spans)
             return {key: tuple(spans[d][i] for d in range(dims)) for i, key in enumerate(keys)}
         else:
-            return {key: 1 for key in keys}
+            return {key: (1,) for key in keys}
 
     @property
     def rows(self):
@@ -384,6 +383,19 @@ class Table(object):
                 }
             self._func = None
         return self._data
+
+    @property
+    def data_iter(self):
+        """
+        Returns an iterator over :attr:`data` where each key, value combination
+        is returned as a tuple of (row_key, col_key, value), and each row and
+        column key is returned as a tuple, regardless of the number of row and
+        column dimensions. Furthermore, items are returned in declared row then
+        column order. This property is intended to make renderers simpler.
+        """
+        for row_tuple, row_key in zip(self.rows_iter, self.rows):
+            for col_tuple, col_key in zip(self.cols_iter, self.cols):
+                yield row_tuple, col_tuple, self.data[(row_key, col_key)]
 
     @property
     def as_ndarray(self):

@@ -35,6 +35,7 @@ import io
 import csv
 import pickle
 import tempfile
+import textwrap
 
 import xlsxwriter as xl
 import pybel
@@ -91,6 +92,8 @@ def render_json(results, **kwargs):
             'title': table.title,
             'rows_title': table.rows_title,
             'cols_title': table.cols_title,
+            'rows_unit': table.rows_unit,
+            'cols_unit': table.cols_unit,
             'data': [
                 {
                     'key': (_format_key(row_key), _format_key(col_key)),
@@ -122,16 +125,21 @@ def render_xml(results, **kwargs):
 
     def render_table(table):
         return tag.table(
-            tag.columns(
-                (tag.column(id=str(col_key)) for col_key in table.cols),
-                title=table.cols_title
+            tag.cols(
+                tag.dim(title=title, unit=unit)
+                for (title, unit) in zip(table.col_titles, table.col_units)
                 ),
-            tag.rows((
-                tag.row(
-                    (tag.data(value=table.data[(row_key, col_key)]) for col_key in table.cols),
-                    id=str(row_key)
-                ) for row_key in table.rows),
-                title=table.rows_title
+            tag.rows(
+                tag.dim(title=title, unit=unit)
+                for (title, unit) in zip(table.row_titles, table.row_units)
+                ),
+            tag.data(
+                tag.datum(
+                    tag.row(tag.dim(key=key) for key in row_key),
+                    tag.col(tag.dim(key=key) for key in col_key),
+                    value
+                    )
+                for row_key, col_key, value in table.data_iter
                 ),
             title=table.title,
             name=table.name,
@@ -165,11 +173,40 @@ def render_csv(results, **kwargs):
         stream.seek(0)
         return stream
 
+    def render_readme():
+        s = """\
+This file details the CSV files contained within this archive, and the
+structure of their rows and columns.
+"""
+        for table in results:
+            s += '\n'
+            s += '%s.csv:\n' % table.name
+            s += ''.join(
+                '  %s\n' % l for l in textwrap.wrap(table.title, width=70)
+                )
+            s += '  Rows:\n'
+            for title, unit in zip(table.row_titles, table.row_units):
+                if unit:
+                    s += '    %s [%s]\n' % (title, unit if unit else 'unitless')
+                else:
+                    s += '    %s\n' % title
+            s += '  Cols:\n'
+            for title, unit in zip(table.col_titles, table.col_units):
+                if unit:
+                    s += '    %s [%s]\n' % (title, unit if unit else 'unitless')
+                else:
+                    s += '    %s\n' % title
+        stream = io.BytesIO()
+        stream.write(s.encode('utf-8'))
+        stream.seek(0)
+        return stream
+
     with io.BytesIO() as stream:
         with ZipFile(stream, 'w', compression=ZIP_DEFLATED) as archive:
             archive.comment = '\n'.join(table.title for table in results).encode('utf-8')
             for table in results:
                 archive.write(render_table(table), '%s.csv' % table.name)
+            archive.write(render_readme(), 'README.txt')
         return stream.getvalue()
 
 
@@ -179,32 +216,53 @@ def render_csv(results, **kwargs):
 def render_xlsx(results, **kwargs):
     stream = io.BytesIO()
     workbook = xl.Workbook(stream, {'in_memory': True})
-    bold = workbook.add_format({'bold': True})
+    col_title_f = workbook.add_format({'bold': True, 'left': 1})
+    row_title_f = workbook.add_format({'bold': True, 'bottom': 1})
+    first_col_title_f = workbook.add_format({'bottom': 1, 'left': 1})
+    first_data_f = workbook.add_format({'top': 1, 'left': 1})
+    col_key_f = workbook.add_format({'top': 1})
+    row_key_f = workbook.add_format({'left': 1})
+    heading_f = workbook.add_format({
+        'font_size': 14,
+        'center_across': True,
+        })
 
     def render_table(table):
-        worksheet = workbook.add_worksheet(table.title[:31])
+        worksheet = workbook.add_worksheet(table.name[:31])
+        # Write worksheet title
+        worksheet.set_row(0, 24)
+        worksheet.write(0, 0, table.title, heading_f)
+        for i in range(table.row_dims + len(table.cols) - 1):
+            worksheet.write_blank(0, i + 1, heading_f)
         # Write column and row titles
+        column_titles = ' / '.join(
+            '%s [%s]' % (title, unit) if unit else title
+            for (title, unit) in zip(table.col_titles, table.col_units)
+            )
         worksheet.merge_range(
-            0, table.row_dims, 0, table.row_dims + len(table.cols) - 1,
-            table.col_titles[0], bold)
-        for col_ix, row_title in enumerate(table.row_titles):
+            2, table.row_dims, 2, table.row_dims + len(table.cols) - 1,
+            column_titles, col_title_f)
+        for col_ix, (title, unit) in enumerate(zip(table.row_titles, table.row_units)):
             worksheet.write(
-                table.col_dims, col_ix, row_title, bold)
+                table.col_dims + 2, col_ix, '%s [%s]' % (title, unit) if unit else title,
+                row_title_f)
         # Write column keys
         for col_ix, col_key in enumerate(table.cols_iter, start=table.row_dims):
             span = table.col_spans[col_key]
             for col_dim in range(table.col_dims):
                 if span[col_dim] > 1:
                     worksheet.merge_range(
-                        col_dim + 1, col_ix,
-                        col_dim + 1, col_ix + span[col_dim] - 1,
-                        _format_key(col_key[col_dim]))
+                        col_dim + 3, col_ix,
+                        col_dim + 3, col_ix + span[col_dim] - 1,
+                        _format_key(col_key[col_dim]),
+                        first_col_title_f if col_ix == table.row_dims else None)
                 elif span[col_dim] == 1:
                     worksheet.write(
-                        col_dim + 1, col_ix,
-                        _format_key(col_key[col_dim]))
+                        col_dim + 3, col_ix,
+                        _format_key(col_key[col_dim]),
+                        first_col_title_f if col_ix == table.row_dims else None)
         # Write row keys
-        for row_ix, row_key in enumerate(table.rows_iter, start=table.col_dims + 1):
+        for row_ix, row_key in enumerate(table.rows_iter, start=table.col_dims + 3):
             span = table.row_spans[row_key]
             for row_dim in range(table.row_dims):
                 if span[row_dim] > 1:
@@ -217,9 +275,15 @@ def render_xlsx(results, **kwargs):
                         row_ix, row_dim,
                         _format_key(row_key[row_dim]))
         # Write data
-        for row_ix, row_key in enumerate(table.rows, start=table.col_dims + 1):
+        for row_ix, row_key in enumerate(table.rows, start=table.col_dims + 3):
             for col_ix, col_key in enumerate(table.cols, start=table.row_dims):
-                worksheet.write(row_ix, col_ix, table.data[(row_key, col_key)])
+                worksheet.write(
+                    row_ix, col_ix, table.data[(row_key, col_key)],
+                    first_data_f if (row_ix, col_ix) == (table.col_dims + 3, table.row_dims) else
+                    col_key_f if row_ix == table.col_dims + 3 else
+                    row_key_f if col_ix == table.row_dims else
+                    None
+                    )
 
     for table in results:
         render_table(table)
@@ -232,18 +296,25 @@ def render_html(obj, **kwargs):
     tag = TagFactory(xml=False)
 
     def render_table(table):
+        column_titles = ' / '.join(
+            '%s [%s]' % (title, unit) if unit else title
+            for (title, unit) in zip(table.col_titles, table.col_units)
+            )
         return tag.table(
             tag.caption(obj['tables'][table_id]['title']),
             tag.thead(
                 tag.tr(
                     (tag.th('') for i in range(table.row_dims)),
-                    tag.th(table.col_titles[0], colspan=len(table.cols)),
+                    tag.th(column_titles, colspan=len(table.cols)),
                     ),
                 (
                     tag.tr(
                         (tag.th('') for i in range(table.row_dims))
                         if col_dim < table.col_dims - 1 else
-                        (tag.th(row_title) for row_title in table.row_titles),
+                        (
+                            tag.th('%s [%s]' % (row_title, row_unit) if row_unit else row_title)
+                            for (row_title, row_unit) in zip(table.row_titles, table.row_units)
+                            ),
                         (
                             tag.th(_format_key(key[col_dim]), colspan=span if span > 1 else None)
                             for key in table.cols_iter

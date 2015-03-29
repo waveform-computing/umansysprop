@@ -54,3 +54,8 @@ table.docutils.citation td.label {
     width: 10em;
     text-align: left;
 }
+
+table caption {
+    text-align: left;
+    margin-bottom: 1em;
+}

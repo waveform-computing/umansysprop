@@ -34,23 +34,38 @@ from ..forms import *
 
 
 class HandlerForm(Form):
-    number1 = IntegerField('First number')
-    number2 = IntegerField('Second number')
-    temperatures = FloatRangeField('Temperature', max_entries=100, validators=[
-        NumberRange(min=0.0, max=100.0)
-        ])
-    compounds = SMILESListField('Compounds', compounds=[
-        ('Succinic acid',  r'C(CC(=O)O)C(=O)O'),
-        ('Oxalic acid',    r'C(=O)(C(=O)O)O'),
-        ('Malonic acid',   r'O=C(O)CC(O)=O'),
-        ('Pinolenic acid', r'CCCCC\C=C\C\C=C\CC\C=C\CCCC(=O)O'),
-        ])
+    temperatures = FloatRangeField(
+        'Temperature', validators=[
+            Length(min=1, max=100, message='Temperatures must have between 1 and 100 values'),
+            NumberRange(min=0.0, max=100.0, message='Temperatures must be between 0 and 100 celsius'),
+            ])
+    scale1 = IntegerField('Scaling factor 1')
+    scale2 = IntegerField('Scaling factor 2')
+    compounds = SMILESListField(
+        'Compounds',
+        compounds=[
+            ('C(CC(=O)O)C(=O)O',                 'Succinic acid'),
+            ('C(=O)(C(=O)O)O',                   'Oxalic acid'),
+            ('O=C(O)CC(O)=O',                    'Malonic acid'),
+            ('CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O', 'Pinolenic acid'),
+            ])
 
 
-def handler(number1, number2, temperatures, compounds):
-    return {
-            'result': number1 + number2,
-            'range': list(temperatures),
-            'formula': [c.formula for c in compounds],
-            }
+def handler(temperatures, scale1, scale2, compounds):
+    return Result(
+        Table(
+            'temps',
+            title='Demo 1',
+            rows=temperatures, rows_title='Temperatures',
+            cols=[scale1, scale2], cols_title='Scaling factors',
+            func=lambda t, s: t * s,
+            ),
+        Table(
+            'formulae',
+            title='Demo 2',
+            rows=compounds, rows_title='Compounds',
+            cols=['Formula'], cols_title='Result',
+            func=lambda c, _: c.formula,
+            )
+        )
 

@@ -1,6 +1,7 @@
 {% extends "tool.html" %}
 {% block title %}Test{% endblock %}
 {% block form %}
+{{ form.hidden_tag() }}
 <div class="row">
   <div class="medium-6 columns">
     {{ render_field(form.number1) }}

@@ -148,7 +148,7 @@ class TagFactory(object):
         _tag = _tag.rstrip('_')
         result = ''
         open_tag = kwargs.get('_open', True)
-        close_tag = kwargs.get('_close', _tag.lower() not in EMPTY_ELEMENTS)
+        close_tag = kwargs.get('_close', self._xml or _tag.lower() not in EMPTY_ELEMENTS)
         empty_tag = not args
         if open_tag:
             if empty_tag and not close_tag and self._xml:

@@ -142,6 +142,8 @@ def tool(name):
         response.mimetype = mimetype
         response.headers.extend(headers)
         return response
+    else:
+        print(form.errors)
     return render_template(
         '%s.html' % name,
         title=mod.__doc__,
