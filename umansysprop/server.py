@@ -90,7 +90,7 @@ def api():
             mod_name: {
                 'url': url_for('call', name=mod_name),
                 'title': (mod.__doc__ or '').strip(),
-                'doc': (mod.handler.__doc__ or '').strip(),
+                'doc': dedent(mod.handler.__doc__ or ''),
                 'params': [
                     field.name for field in mod.HandlerForm()
                     if field.name not in ('csrf_token', 'output_format')
