@@ -54,6 +54,63 @@ from . import results
 
 
 class UManSysProp(object):
+    """
+    Provides a simple Python interface to the methods provided via the `JSON
+    API`_ on the `UManSysProp`_ website. Constructing an instance of this class
+    will cause the new instance to query the server for all available methods.
+    Each method will be exposed as a method of the instance, with docstrings
+    obtained from the server. For example::
+
+        >>> import umansysprop.client
+        >>> client = umansysprop.client.UManSysProp()
+        >>> client.vapour_pressure
+        <bound method ?.vapour_pressure of <umansysprop.client.UManSysProp object at 0x7f80fbae7b50>>
+        >>> client.vapour_pressure.__doc__
+        u"\\nCalculates vapour pressures for all specified *compounds* (given..."
+
+    The class can be constructed with an alternative *base_url* if you wish to
+    point it a different server. The *base_url* parameter defaults to the
+    `UManSysProp`_ website.
+
+    Methods can be called like a normal Python method, but will result in a
+    request being sent to the web-server, processed, and the JSON-formatted
+    results being re-constructed as a :class:`~umansysprop.results.Result` list
+    on the client.  For example::
+
+        >>> result = client.vapour_pressure([
+        ... 'CCCC', 'C(CC(=O)O)C(=O)O', 'C(=O)(C(=O)O)O',
+        ... 'CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O'],
+        ... [298.15, 299.15, 300.15, 310.15],
+        ... 'nannoolal', 'nannoolal')
+        >>> result
+        [<Table name="pressures">]
+        >>> result.pressures
+        <Table name="pressures">
+        >>> result.pressures.data
+        {(298.15, u'C(=O)(C(=O)O)O'): -5.196360545314141,
+         (298.15, u'C(CC(=O)O)C(=O)O'): -6.33293991047814,
+         (298.15, u'CCCC'): 0.22091492301164387,
+         (298.15, u'CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O'): -9.660331395164858,
+         (299.15, u'C(=O)(C(=O)O)O'): -5.151703772558254,
+         (299.15, u'C(CC(=O)O)C(=O)O'): -6.281177618554678,
+         (299.15, u'CCCC'): 0.2354793193478599,
+         (299.15, u'CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O'): -9.58901500825095,
+         (300.15, u'C(=O)(C(=O)O)O'): -5.107428775107059,
+         (300.15, u'C(CC(=O)O)C(=O)O'): -6.229864995169396,
+         (300.15, u'CCCC'): 0.24993365754879804,
+         (300.15, u'CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O'): -9.518352766693454,
+         (310.15, u'C(=O)(C(=O)O)O'): -4.684643528880829,
+         (310.15, u'C(CC(=O)O)C(=O)O'): -5.74023509658808,
+         (310.15, u'CCCC'): 0.38868830156274703,
+         (310.15, u'CCCCC/C=C/C/C=C/CC/C=C/CCCC(=O)O'): -8.845815136269506}
+
+    Please refer to the reference for :class:`~umansysprop.results.Result` and
+    :class:`~umansysprop.results.Table` for more information on accessing the
+    result data.
+
+    .. _UManSysProp: http://umansysprop.seaes.manchester.ac.uk/
+    .. _JSON API: http://umansysprop.seaes.manchester.ac.uk/api
+    """
 
     _method_template = """\
 def {name}(self, {params}):

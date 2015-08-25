@@ -33,7 +33,7 @@ import sys
 __project__      = 'umansysprop'
 __version__      = '0.1'
 __keywords__     = ['science', 'organic', 'chemistry']
-__author__       = 'Dave Hughes'
+__author__       = 'Dave Jones'
 __author_email__ = 'dave@waveform.org.uk'
 __url__          = 'http://umansysprop.readthedocs.org/'
 __platforms__    = 'ALL'

@@ -56,16 +56,16 @@ class Result(list):
     """
     Represents a list of named :class:`Table` objects.
 
-    The result of a tool is represented as a sequence of tables. This class
-    contains a list of :class:`Table` objects each of which may be retrieved
-    by its name, or by its index in the list (tables with identical names are
-    not ignored, but only the first table may be retrieved by name).
+    The result of a method is represented as a sequence of tables. This class
+    contains a list of :class:`Table` objects each of which may be retrieved by
+    name, or by index in the list (tables with identical names are not ignored,
+    but only the first table may be retrieved by name).
 
     .. note::
 
-        This class also has an extended string representation intended for
-        easy command line debugging. Simply print an instance of the class
-        to view a dump of all the tables contained within it.
+        This class has an extended string representation intended for easy
+        command line debugging. Simply print an instance of the class to view a
+        dump of all the tables contained within it.
     """
     def __init__(self, *tables):
         super(Result, self).__init__(tables)
@@ -75,7 +75,7 @@ class Result(list):
         """
         This class constructor accepts a parsed JSON object (created by
         :func:`umansysprop.renderers.render_json`, or with the same structure
-        produced by that function) and constructs the Result from this
+        produced by that function) and constructs the :class:`Result` from this
         structure.
         """
         def to_tuple(v):
@@ -160,8 +160,11 @@ class Table(object):
     |    |    | C1   | C2   | C3   |
     +====+====+======+======+======+
     | A1 | B1 | data | data | data |
+    +    +----+------+------+------+
     |    | B2 | data | data | data |
+    +----+----+------+------+------+
     | A2 | B1 | data | data | data |
+    +    +----+------+------+------+
     |    | B2 | data | data | data |
     +----+----+------+------+------+
 
@@ -177,6 +180,69 @@ class Table(object):
         intended for easy command line debugging. Printing an instance of
         this class will produce a human readable string representation of the
         table's row and column keys along with the calculated data.
+
+    .. autoattribute:: as_ndarray
+
+    .. autoattribute:: as_dataframe
+
+    .. autoattribute:: col_dims
+
+    .. autoattribute:: col_titles
+
+    .. autoattribute:: cols
+
+    .. autoattribute:: cols_iter
+
+    .. attribute:: cols_title
+
+        A string or tuple of strings giving the title of each column dimension.
+        Note that if :attr:`col_dims` is 1, this may be either a string or
+        a 1-tuple containing a string. The associated :attr:`col_titles`
+        attribute may be easier to work with.
+
+    .. attribute:: cols_unit
+
+        A string or tuple of strings giving the units of each column dimension.
+        Note that if :attr:`col_dims` is 1, this may be either a string or
+        a 1-tuple containing a string. The associated :attr:`col_units`
+        attribute may be easier to work with.
+
+    .. autoattribute:: data
+
+    .. autoattribute:: data_iter
+
+    .. attribute:: name
+
+        The name of the table. This is intended for scripting usage and as such
+        will only ever contain a string beginning with an alphabetic character
+        followed by zero or more alphanumeric characters or underscores.
+
+    .. autoattribute:: row_dims
+
+    .. autoattribute:: row_titles
+
+    .. autoattribute:: rows
+
+    .. autoattribute:: rows_iter
+
+    .. attribute:: rows_title
+
+        A string or tuple of strings giving the title of each row dimension.
+        Note that if :attr:`row_dims` is 1, this may be either a string or
+        a 1-tuple containing a string. The associated :attr:`row_titles`
+        attribute may be easier to work with.
+
+    .. attribute:: rows_unit
+
+        A string or tuple of strings giving the units of each row dimension.
+        Note that if :attr:`row_dims` is 1, this may be either a string or
+        a 1-tuple containing a string. The associated :attr:`row_units`
+        attribute may be easier to work with.
+
+    .. attribute:: title
+
+        The human readable title of the table, typically rendered in the web
+        interface as the table's caption.
     """
     def __init__(
             self, name, rows, cols, func=None, data=None, title='',
