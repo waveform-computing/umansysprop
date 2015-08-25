@@ -86,7 +86,7 @@ def api():
             tools=tools,
             )
     elif mimetype == 'application/json':
-        return jsonify(**{
+        response = jsonify(**{
             mod_name: {
                 'url': url_for('call', name=mod_name),
                 'title': (mod.__doc__ or '').strip(),
@@ -98,6 +98,9 @@ def api():
                 }
             for mod_name, mod in tools.items()
             })
+        # Simple CORS setup
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
     else:
         abort(406)
 
@@ -149,6 +152,7 @@ def call(name):
     headers, result = renderers.render('application/json', result)
     response = make_response(result)
     response.mimetype = 'application/json'
+    response.headers.extend(headers)
     return response
 
 

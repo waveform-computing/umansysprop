@@ -83,7 +83,11 @@ def _format_key(value):
         return value
 
 
-@register('application/json', 'JSON file')
+@register('application/json', 'JSON file', headers={
+    # Simple CORS setup; see http://enable-cors.org/server.html for more
+    # information
+    'Access-Control-Allow-Origin': '*',
+    })
 def render_json(results, **kwargs):
 
     def render_table(table):
