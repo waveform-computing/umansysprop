@@ -133,27 +133,41 @@ def api_docs(name):
 
 @app.route('/api/<name>', methods=['POST'])
 def call(name):
+    # Ensure CORS is on for all responses, including errors
+    headers = {'Access-Control-Allow-Origin': '*'}
     # Fail if the RPC call has more than a meg of data
     if request.content_length > 1048576:
-        return jsonify(exc_type='ValueError', exc_value='Request too large'), 413
-    try:
-        mod = tools[name]
-    except KeyError:
-        return jsonify(exc_type='NameError', exc_value='Unknown method'), 404
-    try:
-        args = json.loads(request.get_data(cache=False, as_text=True))
-        args = forms.convert_args(mod.HandlerForm(formdata=None), args)
-    except ValueError as e:
-        return jsonify(exc_type='ValueError', exc_value='Badly formed parameters: %s' % str(e)), 400
-    try:
-        result = mod.handler(**args)
-    except (ValueError, KeyError) as e:
-        return jsonify(exc_type=e.__class__.__name__, exc_value=str(e)), 400
-    headers, result = renderers.render('application/json', result)
+        result = jsonify(exc_type='ValueError', exc_value='Request too large')
+        status = 413
+    else:
+        try:
+            mod = tools[name]
+        except KeyError:
+            result = jsonify(exc_type='NameError', exc_value='Unknown method')
+            status = 404
+        else:
+            try:
+                args = json.loads(request.get_data(cache=False, as_text=True))
+                args = forms.convert_args(mod.HandlerForm(formdata=None), args)
+            except ValueError as e:
+                result = jsonify(exc_type='ValueError', exc_value='Badly formed parameters: %s' % str(e))
+                status = 400
+            except KeyError as e:
+                result = jsonify(exc_type='KeyError', exc_value='Missing parameter: %s' % str(e))
+                status = 400
+            else:
+                try:
+                    result = mod.handler(**args)
+                except (ValueError, KeyError) as e:
+                    result = jsonify(exc_type=e.__class__.__name__, exc_value=str(e))
+                    status = 400
+                else:
+                    headers, result = renderers.render('application/json', result)
+                    status = 200
     response = make_response(result)
     response.mimetype = 'application/json'
     response.headers.extend(headers)
-    return response
+    return response, status
 
 
 @app.route('/tool/<name>', methods=['GET', 'POST'])
