@@ -11,7 +11,7 @@ X-Python3-Version: >= 3.2
 Package: python-umansysprop
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-numpy, python-pandas, python-requests
-Suggests: python-picamera-docs, python-rpi.gpio
+Suggests: python-umansysprop-docs
 Description: Python interface to the UManSysProp JSON API
  UManSysProp is an online facility for calculating the properties of individual
  organic molecules, ensemble mixtures and aerosol particles. This library
@@ -22,7 +22,7 @@ Description: Python interface to the UManSysProp JSON API
 Package: python3-umansysprop
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}, python3-numpy, python3-pandas, python3-requests
-Suggests: python-picamera-docs, python3-rpi.gpio
+Suggests: python-umansysprop-docs
 Description: Python interface to the UManSysProp JSON API
  UManSysProp is an online facility for calculating the properties of individual
  organic molecules, ensemble mixtures and aerosol particles. This library
