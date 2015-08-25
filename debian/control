@@ -1,0 +1,42 @@
+Source: umansysprop
+Maintainer: Dave Jones <dave@waveform.org.uk>
+Homepage: http://umansysprop.readthedocs.org/
+Section: python
+Priority: extra
+Build-Depends: debhelper (>= 8), python-all (>= 2.7), python-setuptools, python3-all, python3-setuptools, python-docutils, python-sphinx (>= 1.0.7+dfsg-1~)
+Standards-Version: 3.9.3
+X-Python-Version: >= 2.7
+X-Python3-Version: >= 3.2
+
+Package: python-umansysprop
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python-numpy, python-pandas, python-requests
+Suggests: python-picamera-docs, python-rpi.gpio
+Description: Python interface to the UManSysProp JSON API
+ UManSysProp is an online facility for calculating the properties of individual
+ organic molecules, ensemble mixtures and aerosol particles. This library
+ provides a simple Python interface to the site's JSON-based API.
+ .
+ This is the Python 2 version of the package.
+
+Package: python3-umansysprop
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, python3-numpy, python3-pandas, python3-requests
+Suggests: python-picamera-docs, python3-rpi.gpio
+Description: Python interface to the UManSysProp JSON API
+ UManSysProp is an online facility for calculating the properties of individual
+ organic molecules, ensemble mixtures and aerosol particles. This library
+ provides a simple Python interface to the site's JSON-based API.
+ .
+ This is the Python 3 version of the package.
+
+Package: python-umansysprop-docs
+Architecture: all
+Section: doc
+Depends: ${sphinxdoc:Depends}, ${misc:Depends}
+Description: Documentation for the Python interface to the UManSysProp JSON API
+ UManSysProp is an online facility for calculating the properties of individual
+ organic molecules, ensemble mixtures and aerosol particles. This library
+ provides a simple Python interface to the site's JSON-based API.
+ .
+ This is the version-independent documentation for the package.

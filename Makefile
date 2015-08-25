@@ -25,6 +25,7 @@ DEB_SUFFIX:=ubuntu1
 else
 DEB_SUFFIX:=
 endif
+DEB_ARCH:=$(shell dpkg --print-architecture)
 PYVER:=$(shell $(PYTHON) $(PYFLAGS) -c "import sys; print('py%d.%d' % sys.version_info[:2])")
 PY_SOURCES:=$(shell \
 	$(PYTHON) $(PYFLAGS) setup.py egg_info >/dev/null 2>&1 && \
@@ -43,16 +44,21 @@ DEB_SOURCES:=debian/changelog \
 DOC_SOURCES:=docs/conf.py \
 	$(wildcard docs/*.png) \
 	$(wildcard docs/*.svg) \
+	$(wildcard docs/*.dot) \
+	$(wildcard docs/*.mscgen) \
+	$(wildcard docs/*.gpi) \
 	$(wildcard docs/*.rst) \
 	$(wildcard docs/*.pdf)
+SUBDIRS:=
 
 # Calculate the name of all outputs
 DIST_EGG=dist/$(NAME)-$(VER)-$(PYVER).egg
 DIST_TAR=dist/$(NAME)-$(VER).tar.gz
 DIST_ZIP=dist/$(NAME)-$(VER).zip
-DIST_DEB=dist/python-$(NAME)_$(VER)-1$(DEB_SUFFIX)_armhf.deb \
-	dist/python3-$(NAME)_$(VER)-1$(DEB_SUFFIX)_armhf.deb \
-	dist/python-$(NAME)-docs_$(VER)-1$(DEB_SUFFIX)_all.deb
+DIST_DEB=dist/python-$(NAME)_$(VER)-1$(DEB_SUFFIX)_all.deb \
+	dist/python3-$(NAME)_$(VER)-1$(DEB_SUFFIX)_all.deb \
+	dist/python-$(NAME)-docs_$(VER)-1$(DEB_SUFFIX)_all.deb \
+	dist/$(NAME)_$(VER)-1$(DEB_SUFFIX)_$(DEB_ARCH).changes
 DIST_DSC=dist/$(NAME)_$(VER)-1$(DEB_SUFFIX).tar.gz \
 	dist/$(NAME)_$(VER)-1$(DEB_SUFFIX).dsc \
 	dist/$(NAME)_$(VER)-1$(DEB_SUFFIX)_source.changes
@@ -75,11 +81,13 @@ all:
 	@echo "make release - Create and tag a new release"
 	@echo "make upload - Upload the new release to repositories"
 
-install:
+install: $(SUBDIRS)
 	$(PYTHON) $(PYFLAGS) setup.py install --root $(DEST_DIR)
 
 doc: $(DOC_SOURCES)
-	$(MAKE) -C docs html latexpdf
+	$(MAKE) -C docs clean
+	$(MAKE) -C docs html
+	$(MAKE) -C docs latexpdf
 
 source: $(DIST_TAR) $(DIST_ZIP)
 
@@ -94,7 +102,10 @@ deb: $(DIST_DEB) $(DIST_DSC)
 dist: $(DIST_EGG) $(DIST_DEB) $(DIST_DSC) $(DIST_TAR) $(DIST_ZIP)
 
 develop: tags
-	$(PIP) install -e .[client,server,doc]
+	@# These have to be done separately to avoid a cockup...
+	$(PIP) install -U setuptools
+	$(PIP) install -U pip
+	$(PIP) install -e .[client,server,doc,test]
 
 test:
 	$(COVERAGE) run -m $(PYTEST) tests -v
@@ -105,21 +116,32 @@ clean:
 	$(MAKE) -f $(CURDIR)/debian/rules clean
 	$(MAKE) -C docs clean
 	rm -fr build/ dist/ $(NAME).egg-info/ tags
+	for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir clean; \
+	done
 	find $(CURDIR) -name "*.pyc" -delete
 
 tags: $(PY_SOURCES)
 	ctags -R --exclude="build/*" --exclude="debian/*" --exclude="docs/*" --languages="Python"
 
-$(DIST_TAR): $(PY_SOURCES)
+$(SUBDIRS):
+	$(MAKE) -C $@
+
+$(MAN_PAGES): $(DOC_SOURCES)
+	$(PYTHON) $(PYFLAGS) setup.py build_sphinx -b man
+	mkdir -p man/
+	cp build/sphinx/man/*.[0-9] man/
+
+$(DIST_TAR): $(PY_SOURCES) $(SUBDIRS)
 	$(PYTHON) $(PYFLAGS) setup.py sdist --formats gztar
 
-$(DIST_ZIP): $(PY_SOURCES)
+$(DIST_ZIP): $(PY_SOURCES) $(SUBDIRS)
 	$(PYTHON) $(PYFLAGS) setup.py sdist --formats zip
 
-$(DIST_EGG): $(PY_SOURCES)
+$(DIST_EGG): $(PY_SOURCES) $(SUBDIRS)
 	$(PYTHON) $(PYFLAGS) setup.py bdist_egg
 
-$(DIST_DEB): $(PY_SOURCES) $(DEB_SOURCES)
+$(DIST_DEB): $(PY_SOURCES) $(SUBDIRS) $(DEB_SOURCES) $(MAN_PAGES)
 	# build the binary package in the parent directory then rename it to
 	# project_version.orig.tar.gz
 	$(PYTHON) $(PYFLAGS) setup.py sdist --dist-dir=../
@@ -128,7 +150,7 @@ $(DIST_DEB): $(PY_SOURCES) $(DEB_SOURCES)
 	mkdir -p dist/
 	for f in $(DIST_DEB); do cp ../$${f##*/} dist/; done
 
-$(DIST_DSC): $(PY_SOURCES) $(DEB_SOURCES)
+$(DIST_DSC): $(PY_SOURCES) $(SUBDIRS) $(DEB_SOURCES) $(MAN_PAGES)
 	# build the source package in the parent directory then rename it to
 	# project_version.orig.tar.gz
 	$(PYTHON) $(PYFLAGS) setup.py sdist --dist-dir=../

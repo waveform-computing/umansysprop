@@ -1,0 +1,9 @@
+Document: python-umansysprop
+Title: UManSysProp Reference
+Author: Dave Jones <dave@waveform.org.uk>
+Abstract: Documentation for the Python interface to the UManSysProp JSON API
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/python-umansysprop-docs/html/index.html
+Files: /usr/share/doc/python-umansysprop-docs/html/*
