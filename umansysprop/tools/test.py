@@ -31,6 +31,7 @@ str = type('')
 
 
 from ..forms import *
+from ..results import Result, Table
 
 
 class HandlerForm(Form):

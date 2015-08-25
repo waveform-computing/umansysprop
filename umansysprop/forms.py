@@ -857,6 +857,6 @@ def convert_args(form, args):
     return {
         field.name: conversion.get(field.__class__, lambda x: x)(args[field.name])
         for field in form
-        if field.name != 'csrf_token'
+        if field.name not in ('csrf_token', 'output_format')
         }
 
