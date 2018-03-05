@@ -35,7 +35,7 @@ __version__      = '0.1'
 __keywords__     = ['science', 'organic', 'chemistry']
 __author__       = 'Dave Jones'
 __author_email__ = 'dave@waveform.org.uk'
-__url__          = 'http://umansysprop.readthedocs.org/'
+__url__          = 'http://umansysprop.readthedocs.io/'
 __platforms__    = 'ALL'
 
 __requires__ = [

@@ -16,6 +16,6 @@ installation and quick start examples) can be read on ReadTheDocs.
 
 .. _downloaded: https://pypi.python.org/pypi/umansysprop
 .. _documentation: http://umansysprop.readthedocs.org/
-.. _source code: https://github.com/waveform80/umansysprop
-.. _bug tracker: https://github.com/waveform80/umansysprop/issues
+.. _source code: https://github.com/waveform-computing/umansysprop
+.. _bug tracker: https://github.com/waveform-computing/umansysprop/issues
 .. _GPL v2: https://www.gnu.org/licenses/gpl-2.0.html
